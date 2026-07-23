@@ -1,0 +1,123 @@
+name: Deploy to CloudPanel
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            api/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Install API dependencies
+        working-directory: api
+        run: npm ci
+
+      - name: Generate Prisma Client
+        working-directory: api
+        run: npx prisma generate
+        env:
+          # Prisma generate does not need a live DB connection
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/placeholder
+
+      - name: Build API
+        working-directory: api
+        run: npm run build
+
+      - name: Build frontend
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URI }}
+
+      - name: Package release
+        run: |
+          set -euo pipefail
+          rm -rf release
+          mkdir -p release/frontend release/api
+
+          # Next.js standalone
+          cp -r .next/standalone/. release/frontend/
+          mkdir -p release/frontend/.next
+          cp -r .next/static release/frontend/.next/static
+          cp -r public release/frontend/public
+
+          # NestJS API
+          cp -r api/dist release/api/dist
+          cp -r api/prisma release/api/prisma
+          cp api/package.json release/api/package.json
+          cp api/package-lock.json release/api/package-lock.json
+          cp api/nest-cli.json release/api/nest-cli.json
+
+          tar -czf release.tar.gz -C release .
+
+      - name: Copy release to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          source: release.tar.gz
+          target: /tmp/halopeno-release/
+
+      - name: Extract, install, and restart
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            set -euo pipefail
+            DEPLOY_PATH="${{ secrets.DEPLOY_PATH }}"
+            mkdir -p "$DEPLOY_PATH"
+            tar -xzf /tmp/halopeno-release/release.tar.gz -C "$DEPLOY_PATH"
+
+            cd "$DEPLOY_PATH/api"
+            if [ ! -f .env ]; then
+              echo "ERROR: Missing $DEPLOY_PATH/api/.env on the server. Create it before deploying."
+              exit 1
+            fi
+            npm ci --omit=dev
+            npx prisma migrate deploy
+            npx prisma generate
+
+            if ! command -v pm2 >/dev/null 2>&1; then
+              npm install -g pm2 --prefix "$HOME/.local"
+              export PATH="$HOME/.local/bin:$PATH"
+            fi
+
+            export PATH="$HOME/.local/bin:$PATH"
+
+            # API :4000 / Next :3000 — reverse-proxy these in CloudPanel Vhost
+            pm2 delete halopeno-api >/dev/null 2>&1 || true
+            pm2 start dist/main.js --name halopeno-api --cwd "$DEPLOY_PATH/api"
+
+            cd "$DEPLOY_PATH/frontend"
+            pm2 delete halopeno-web >/dev/null 2>&1 || true
+            PORT=3000 pm2 start server.js --name halopeno-web --cwd "$DEPLOY_PATH/frontend"
+
+            pm2 save
+            rm -rf /tmp/halopeno-release
+            echo "Deploy finished at $(date -u +%Y-%m-%dT%H:%M:%SZ)"

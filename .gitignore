@@ -26,6 +26,8 @@
 .claude/
 .windsurf/
 __MACOSX/
+.deploy-keys/
+.agents/
 
 # debug
 npm-debug.log*
