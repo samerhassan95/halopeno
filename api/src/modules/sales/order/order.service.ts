@@ -37,6 +37,31 @@ export class OrderService {
     return this.prisma.order.findUniqueOrThrow({ where: { id } });
   }
 
+  async findTrackingByOrderNumber(orderNumber: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { orderNumber },
+    });
+    if (!order) {
+      throw new NotFoundException(`Order not found: ${orderNumber}`);
+    }
+
+    const shipping =
+      order.shippingAddress && typeof order.shippingAddress === 'object'
+        ? (order.shippingAddress as Record<string, unknown>)
+        : {};
+
+    return {
+      orderNumber: order.orderNumber,
+      status: order.status,
+      address: typeof shipping.line1 === 'string' ? shipping.line1 : '',
+      deliveryMethod: typeof shipping.label === 'string' ? shipping.label : 'delivery',
+      scheduledTime:
+        typeof shipping.scheduledTime === 'string' ? shipping.scheduledTime : null,
+      createdAt: order.createdAt.toISOString(),
+      updatedAt: order.updatedAt.toISOString(),
+    };
+  }
+
   create(dto: CreateOrderDto) {
     return this.prisma.order.create({ data: dto as any });
   }

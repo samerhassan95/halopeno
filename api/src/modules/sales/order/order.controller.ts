@@ -35,6 +35,13 @@ export class OrderController {
     return this.service.createFromStorefront(dto);
   }
 
+  @Public()
+  @Get('tracking/:orderNumber')
+  @ApiOperation({ summary: 'Public order tracking by order number' })
+  track(@Param('orderNumber') orderNumber: string) {
+    return this.service.findTrackingByOrderNumber(orderNumber);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get a single order by id' })
   findOne(@Param('id') id: string) {
