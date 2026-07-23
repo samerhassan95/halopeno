@@ -60,9 +60,16 @@ export class OrderService {
 
     const resolvedItems = await Promise.all(
       dto.items.map(async (item) => {
-        const product = item.productId
+        let product = item.productId
           ? await this.prisma.product.findUnique({ where: { id: item.productId } })
-          : await this.prisma.product.findUnique({ where: { slug: item.productSlug } });
+          : null;
+
+        // Storefront cart may send local/non-DB product ids — fall back to slug.
+        if (!product && item.productSlug) {
+          product = await this.prisma.product.findUnique({
+            where: { slug: item.productSlug },
+          });
+        }
 
         if (!product) {
           throw new NotFoundException(`Product not found: ${item.productSlug}`);
