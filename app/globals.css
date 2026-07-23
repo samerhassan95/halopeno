@@ -1,26 +1,328 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --radius: 0.75rem;
+
+  /* Brand palette (light) */
+  --background: #F8F9FC;
+  --foreground: #202433;
+
+  --card: #FFFFFF;
+  --card-foreground: #202433;
+
+  --popover: #FFFFFF;
+  --popover-foreground: #202433;
+
+  --primary: #149BFF;
+  --primary-foreground: #FFFFFF;
+
+  --secondary: #EEF1F8;
+  --secondary-foreground: #202433;
+
+  --muted: #F1F2F7;
+  --muted-foreground: #6B7280;
+
+  --accent: #9061F9;
+  --accent-foreground: #FFFFFF;
+
+  --destructive: #F43F75;
+  --destructive-foreground: #FFFFFF;
+
+  --success: #22C55E;
+  --success-foreground: #FFFFFF;
+
+  --warning: #FBBF24;
+  --warning-foreground: #202433;
+
+  --info: #149BFF;
+  --info-foreground: #FFFFFF;
+
+  --border: #E7E9F2;
+  --input: #E7E9F2;
+  --ring: #149BFF;
+
+  /* Sidebar */
+  --sidebar: #280738;
+  --sidebar-foreground: #E8DEF0;
+  --sidebar-muted: #B79ECB;
+  --sidebar-hover: #3A0F4F;
+  --sidebar-active: #4A1863;
+  --sidebar-active-foreground: #FFFFFF;
+  --sidebar-border: #3D1852;
+  --sidebar-ring: #9061F9;
+
+  --chart-1: #149BFF;
+  --chart-2: #9061F9;
+  --chart-3: #22C55E;
+  --chart-4: #F43F75;
+  --chart-5: #FBBF24;
+
+  --shadow-color: 220 40% 60%;
+}
+
+.dark {
+  --background: #14121B;
+  --foreground: #EDEDF5;
+
+  --card: #1B1826;
+  --card-foreground: #EDEDF5;
+
+  --popover: #1B1826;
+  --popover-foreground: #EDEDF5;
+
+  --primary: #34AAFF;
+  --primary-foreground: #0B1220;
+
+  --secondary: #24202F;
+  --secondary-foreground: #EDEDF5;
+
+  --muted: #211D2C;
+  --muted-foreground: #9A96AD;
+
+  --accent: #A582FF;
+  --accent-foreground: #14121B;
+
+  --destructive: #FB6B93;
+  --destructive-foreground: #14121B;
+
+  --success: #34D573;
+  --success-foreground: #0B1220;
+
+  --warning: #FBBF24;
+  --warning-foreground: #14121B;
+
+  --info: #34AAFF;
+  --info-foreground: #0B1220;
+
+  --border: #2A2636;
+  --input: #2A2636;
+  --ring: #34AAFF;
+
+  --sidebar: #1B0726;
+  --sidebar-foreground: #E8DEF0;
+  --sidebar-muted: #9C86AF;
+  --sidebar-hover: #2A0E3B;
+  --sidebar-active: #37134D;
+  --sidebar-active-foreground: #FFFFFF;
+  --sidebar-border: #2E1140;
+  --sidebar-ring: #A582FF;
+
+  --chart-1: #34AAFF;
+  --chart-2: #A582FF;
+  --chart-3: #34D573;
+  --chart-4: #FB6B93;
+  --chart-5: #FBBF24;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-muted: var(--sidebar-muted);
+  --color-sidebar-hover: var(--sidebar-hover);
+  --color-sidebar-active: var(--sidebar-active);
+  --color-sidebar-active-foreground: var(--sidebar-active-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-olive: var(--olive, var(--accent));
+  --color-olive-dark: var(--olive-dark, var(--accent));
+  --color-gold: var(--gold, var(--warning));
+  --color-brown: var(--brown, var(--foreground));
+  --color-cream: var(--cream, var(--background));
+  --color-beige: var(--beige, var(--secondary));
+
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-manrope);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --animate-fade-in: fade-in 0.2s ease-out;
+  --animate-slide-in: slide-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes slide-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "cv11", "ss01";
+  }
+  [dir="rtl"] .rtl-flip {
+    transform: scaleX(-1);
+  }
+}
+
+@layer utilities {
+  .shadow-soft {
+    box-shadow: 0 1px 2px hsl(var(--shadow-color) / 0.04), 0 4px 16px hsl(var(--shadow-color) / 0.06);
+  }
+  .shadow-soft-lg {
+    box-shadow: 0 2px 4px hsl(var(--shadow-color) / 0.04), 0 12px 32px hsl(var(--shadow-color) / 0.08);
+  }
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 999px;
+  }
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* =====================================================================
+   STOREFRONT THEME — scoped brand override for the /store route group.
+   Same semantic variable names as the admin theme above, so every
+   existing bg, text and border utility (and every shadcn primitive)
+   re-themes automatically for anything nested inside .storefront-theme.
+   ===================================================================== */
+.storefront-theme {
+  --radius: 1.5rem;
+
+  --background: #ffffff;
+  --foreground: #173c28;
+
+  --card: #fffdf7;
+  --card-foreground: #173c28;
+
+  --popover: #fffdf7;
+  --popover-foreground: #173c28;
+
+  --primary: #124b2d;
+  --primary-foreground: #fff8e9;
+
+  --secondary: #e5ebd8;
+  --secondary-foreground: #173c28;
+
+  --muted: #f0e7d4;
+  --muted-foreground: #647067;
+
+  --accent: #b52a24;
+  --accent-foreground: #fff8e9;
+
+  --destructive: #b52a24;
+  --destructive-foreground: #fff8e9;
+
+  --success: #2f6f45;
+  --success-foreground: #fff8e9;
+
+  --warning: #c58d2e;
+  --warning-foreground: #173c28;
+
+  --info: #496b4f;
+  --info-foreground: #fff8e9;
+
+  --border: #d8d9c5;
+  --input: #d8d9c5;
+  --ring: #b52a24;
+
+  --olive: #7d966b;
+  --olive-dark: #365f40;
+  --gold: #b52a24;
+  --brown: #173c28;
+  --cream: #ffffff;
+  --beige: #f0e7d4;
+
+  --shadow-color: 145 32% 24%;
+
+  --font-sans: var(--font-cairo);
+  --font-display: var(--font-cairo);
+
+  font-feature-settings: normal;
+  color-scheme: light;
+}
+
+@layer utilities {
+  .steam::before,
+  .steam::after {
+    content: "";
+    position: absolute;
+    bottom: 100%;
+    width: 10px;
+    height: 46px;
+    border-radius: 999px;
+    background: linear-gradient(to top, rgb(255 255 255 / 0.55), transparent);
+    filter: blur(4px);
+    animation: steam-rise 3.2s ease-in-out infinite;
+  }
+  .steam::before {
+    left: 42%;
+    animation-delay: 0s;
+  }
+  .steam::after {
+    left: 55%;
+    height: 34px;
+    animation-delay: 1.1s;
+  }
+  @keyframes steam-rise {
+    0% { transform: translateY(0) scaleX(1); opacity: 0; }
+    20% { opacity: 0.8; }
+    100% { transform: translateY(-38px) scaleX(1.4); opacity: 0; }
+  }
+  .animate-float {
+    animation: float-y 5s ease-in-out infinite;
+  }
+  @keyframes float-y {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+  .bg-organic-blob {
+    border-radius: 42% 58% 63% 37% / 41% 44% 56% 59%;
+  }
 }
