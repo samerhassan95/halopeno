@@ -110,13 +110,13 @@ jobs:
 
             export PATH="$HOME/.local/bin:$PATH"
 
-            # API :4000 / Next :3000 — reverse-proxy these in CloudPanel Vhost
+            # API :4000 / Next :3100 — reverse-proxy these in CloudPanel Vhost
             pm2 delete halopeno-api >/dev/null 2>&1 || true
             pm2 start dist/main.js --name halopeno-api --cwd "$DEPLOY_PATH/api"
 
             cd "$DEPLOY_PATH/frontend"
             pm2 delete halopeno-web >/dev/null 2>&1 || true
-            PORT=3000 pm2 start server.js --name halopeno-web --cwd "$DEPLOY_PATH/frontend"
+            PORT=3100 HOSTNAME=127.0.0.1 pm2 start server.js --name halopeno-web --cwd "$DEPLOY_PATH/frontend" --update-env
 
             pm2 save
             rm -rf /tmp/halopeno-release
