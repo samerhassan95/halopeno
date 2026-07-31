@@ -13,7 +13,6 @@ import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
-import { Public } from '../../../common/decorators/public.decorator';
 
 @ApiTags('Commerce')
 @ApiBearerAuth()
@@ -21,14 +20,12 @@ import { Public } from '../../../common/decorators/public.decorator';
 export class ProductController {
   constructor(private readonly service: ProductService) {}
 
-  @Public()
   @Get()
   @ApiOperation({ summary: 'List products with pagination, search and sorting' })
   findAll(@Query() query: PaginationQueryDto) {
     return this.service.findAll(query);
   }
 
-  @Public()
   @Get(':id')
   @ApiOperation({ summary: 'Get a single product by id' })
   findOne(@Param('id') id: string) {

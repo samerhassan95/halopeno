@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsIn, IsInt, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsIn, IsInt, IsNumber, IsObject, IsOptional, IsString } from 'class-validator';
 import { ProductType, ProductStatus } from '@prisma/client';
 
 export class CreateProductDto {
@@ -99,6 +99,16 @@ export class CreateProductDto {
   @IsOptional()
   @IsNumber()
   wholesalePrice?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsObject()
+  wholesaleConfig?: Record<string, unknown>;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsObject()
+  digitalConfig?: Record<string, unknown>;
 
   @ApiPropertyOptional()
   @IsOptional()

@@ -18,6 +18,11 @@ export class ProductService {
         skip: (page - 1) * limit,
         take: limit,
         orderBy: sortBy ? { [sortBy]: sortOrder } : { createdAt: 'desc' },
+        include: {
+          category: { select: { id: true, name: true } },
+          brand: { select: { id: true, name: true } },
+          images: { take: 1, orderBy: { displayOrder: 'asc' } },
+        },
       }),
       this.prisma.product.count({ where }),
     ]);
@@ -25,7 +30,15 @@ export class ProductService {
   }
 
   findOne(id: string) {
-    return this.prisma.product.findUniqueOrThrow({ where: { id } });
+    return this.prisma.product.findUniqueOrThrow({
+      where: { id },
+      include: {
+        category: true,
+        brand: true,
+        images: { orderBy: { displayOrder: 'asc' } },
+        variants: true,
+      },
+    });
   }
 
   create(dto: CreateProductDto) {

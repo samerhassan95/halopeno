@@ -52,9 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     clearTokens();
     window.localStorage.removeItem("vantage-user");
     setUser(null);
-    if (window.location.pathname.startsWith("/admin")) {
-      window.location.href = "/admin/login";
-    }
+    window.location.href = "/admin/login";
   }, []);
 
   const value = React.useMemo(() => ({ user, loading, login, logout }), [user, loading, login, logout]);

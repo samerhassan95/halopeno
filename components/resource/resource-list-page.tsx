@@ -28,6 +28,11 @@ import { TableSkeleton } from "@/components/common/loading-skeleton";
 import { StatusBadge } from "@/components/resource/status-badge";
 import { ResourceFormDialog } from "@/components/resource/resource-form-dialog";
 import { ResourceViewDialog } from "@/components/resource/resource-view-dialog";
+import { BrandDialog, type BrandItem } from "@/components/wholesale/brand-dialog";
+import { CategoryDialog, type CategoryItem } from "@/components/wholesale/category-dialog";
+import { CollectionDialog, type CollectionItem } from "@/components/wholesale/collection-dialog";
+import { AttributeDialog, type AttributeItem } from "@/components/resource/attribute-dialog";
+import { WarehouseDialog, type WarehouseItem } from "@/components/resource/warehouse-dialog";
 import { useResourceList } from "@/lib/hooks/use-resource-list";
 import { api, ApiError } from "@/lib/api/client";
 import { formatCurrency } from "@/lib/utils";
@@ -335,7 +340,7 @@ export function ResourceListPage({ config }: { config: ResourcePageConfig }) {
         )}
       </Card>
 
-      {config.createFields && (
+      {config.route === "inventory/warehouses" ? <WarehouseDialog open={createOpen} onOpenChange={setCreateOpen} editing={null} warehouses={data as unknown as WarehouseItem[]} onSaved={() => { setCreateOpen(false); refetch(); }} /> : config.route === "brands" ? <BrandDialog open={createOpen} onOpenChange={setCreateOpen} editing={null} brands={data as unknown as BrandItem[]} onSaved={() => { setCreateOpen(false); refetch(); }} /> : config.route === "categories" ? <CategoryDialog open={createOpen} onOpenChange={setCreateOpen} editing={null} categories={data as unknown as CategoryItem[]} onSaved={() => { setCreateOpen(false); refetch(); }} /> : config.route === "collections" ? <CollectionDialog open={createOpen} onOpenChange={setCreateOpen} editing={null} collections={data as unknown as CollectionItem[]} onSaved={() => { setCreateOpen(false); refetch(); }} /> : config.route === "attributes" ? <AttributeDialog open={createOpen} onOpenChange={setCreateOpen} editing={null} attributes={data as unknown as AttributeItem[]} onSaved={() => { setCreateOpen(false); refetch(); }} /> : config.createFields && (
         <ResourceFormDialog
           open={createOpen}
           onOpenChange={setCreateOpen}
@@ -346,7 +351,7 @@ export function ResourceListPage({ config }: { config: ResourcePageConfig }) {
         />
       )}
 
-      <ResourceFormDialog
+      {config.route === "inventory/warehouses" ? <WarehouseDialog open={!!editTarget} onOpenChange={(open) => !open && setEditTarget(null)} editing={editTarget as unknown as WarehouseItem | null} warehouses={data as unknown as WarehouseItem[]} onSaved={() => { setEditTarget(null); refetch(); }} /> : config.route === "brands" ? <BrandDialog open={!!editTarget} onOpenChange={(open) => !open && setEditTarget(null)} editing={editTarget as unknown as BrandItem | null} brands={data as unknown as BrandItem[]} onSaved={() => { setEditTarget(null); refetch(); }} /> : config.route === "categories" ? <CategoryDialog open={!!editTarget} onOpenChange={(open) => !open && setEditTarget(null)} editing={editTarget as unknown as CategoryItem | null} categories={data as unknown as CategoryItem[]} onSaved={() => { setEditTarget(null); refetch(); }} /> : config.route === "collections" ? <CollectionDialog open={!!editTarget} onOpenChange={(open) => !open && setEditTarget(null)} editing={editTarget as unknown as CollectionItem | null} collections={data as unknown as CollectionItem[]} onSaved={() => { setEditTarget(null); refetch(); }} /> : config.route === "attributes" ? <AttributeDialog open={!!editTarget} onOpenChange={(open) => !open && setEditTarget(null)} editing={editTarget as unknown as AttributeItem | null} attributes={data as unknown as AttributeItem[]} onSaved={() => { setEditTarget(null); refetch(); }} /> : <ResourceFormDialog
         open={!!editTarget}
         onOpenChange={(open) => !open && setEditTarget(null)}
         title={`Edit ${config.title}`}
@@ -354,7 +359,7 @@ export function ResourceListPage({ config }: { config: ResourcePageConfig }) {
         initialValues={editTarget ?? undefined}
         submitting={submitting}
         onSubmit={handleUpdate}
-      />
+      />}
 
       <ResourceViewDialog
         open={!!viewTarget}

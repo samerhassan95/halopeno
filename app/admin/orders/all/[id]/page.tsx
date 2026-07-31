@@ -158,7 +158,18 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     api
       .get<OrderDetailResponse>(`/sales/orders/${id}`)
       .then((res) => {
-        setOrder(res);
+        setOrder({
+          ...res,
+          items: Array.isArray(res.items) ? res.items : [],
+          payments: Array.isArray(res.payments) ? res.payments : [],
+          shipments: Array.isArray(res.shipments) ? res.shipments : [],
+          refunds: Array.isArray(res.refunds) ? res.refunds : [],
+          customer: {
+            ...res.customer,
+            previousOrderCount: res.customer?.previousOrderCount ?? 0,
+            lifetimeValue: Number(res.customer?.lifetimeValue ?? 0),
+          },
+        });
         setNotes(res.internalNotes ?? "");
         setError(null);
       })
@@ -167,7 +178,8 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   }
 
   useEffect(() => {
-    load();
+    const task = window.setTimeout(() => load(), 0);
+    return () => window.clearTimeout(task);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 

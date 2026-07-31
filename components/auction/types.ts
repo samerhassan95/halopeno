@@ -1,0 +1,30 @@
+export interface AuctionAdminConfig {
+  auctionId: string; auctionType: string; condition: string; collection: string; tags: string; subcategory: string; seller: string; location: string;
+  mainImage: string; gallery: string; video: string; images360: string; documents: string; certificates: string; authenticityDocs: string; inspectionReport: string;
+  maxIncrement: number | null; buyNowPrice: number | null; estimatedValue: number; depositAmount: number; buyerPremium: number; sellerCommission: number; taxClass: string; currency: string;
+  enableReserve: boolean; enableBuyNow: boolean; hideReserve: boolean; allowAutoBidding: boolean; requireDeposit: boolean; enableBuyerPremium: boolean;
+  timezone: string; previewStart: string; registrationDeadline: string; startImmediately: boolean; autoExtend: boolean; extensionTriggerMinutes: number; extensionDurationMinutes: number; maxExtensions: number; autoClose: boolean;
+  maxBidAmount: number | null; maxBidsPerCustomer: number | null; bidApproval: boolean; anonymousBidding: boolean; hideBidderIdentity: boolean; allowWithdrawal: boolean; withdrawalDeadline: string; blockSeller: boolean; blockDuplicates: boolean; countries: string;
+  eligibility: string; emailVerification: boolean; phoneVerification: boolean; identityVerification: boolean; businessVerification: boolean; paymentVerification: boolean; depositVerification: boolean;
+  quantityType: string; availableQuantity: number; unitsPerLot: number; numberOfLots: number; maxLotsPerBidder: number;
+  shippingMethods: string[]; weight: string; length: string; width: string; height: string; shippingClass: string; pickupLocation: string; shippingCost: number; handlingFee: number; deliveryTime: string;
+  paymentMethods: string[]; fullPayment: boolean; partialPayment: boolean; depositDeduction: boolean; paymentDeadlineDays: number; latePenalty: number; autoCharge: boolean; escrow: boolean; manualPaymentApproval: boolean;
+  highestBidWins: boolean; reserveMustBeMet: boolean; adminApproval: boolean; sellerApproval: boolean; multipleWinners: boolean; autoWinner: boolean; winnerDeadlineDays: number; notificationTemplate: string; backupWinner: boolean; offerSecondHighest: boolean; cancellationPolicy: string;
+  visibility: string; featured: boolean; homepage: boolean; showSearch: boolean; showBidCount: boolean; showHistory: boolean; showWatchers: boolean; showPrice: boolean;
+  canonicalUrl: string; openGraphImage: string; structuredData: string; schemaMarkup: boolean; highlighted: boolean; verified: boolean; premium: boolean; watchers: number;
+}
+export interface AuctionDetailRow { id:string;productId:string;startingBid:string;reservePrice:string|null;minIncrement:string;startAt:string;endAt:string;autoBidEnabled:boolean;winnerCustomerId:string|null;status:string; }
+export interface AuctionProductRow { id:string;name:string;slug:string;sku:string;type?:string;status:string;shortDescription?:string|null;description?:string|null;categoryId:string|null;category?:{id:string;name:string}|null;brandId:string|null;brand?:{id:string;name:string}|null;sellerId?:string|null;regularPrice:string;stock:number;metaTitle?:string|null;metaDescription?:string|null;images?:{id:string;url:string}[];createdAt:string;updatedAt:string;auctionDetail?:AuctionDetailRow;auctionConfig?:Partial<AuctionAdminConfig>;bids?:AuctionBidRow[]; }
+export interface AuctionBidRow { id:string;auctionId:string;customerId:string;amount:string;isAuto:boolean;createdAt:string;customer?:{name?:string;email?:string}|null; }
+
+export const defaultAuctionConfig: AuctionAdminConfig = {
+  auctionId:"",auctionType:"Timed Auction",condition:"New",collection:"",tags:"",subcategory:"",seller:"Platform",location:"Main Warehouse",mainImage:"",gallery:"",video:"",images360:"",documents:"",certificates:"",authenticityDocs:"",inspectionReport:"",
+  maxIncrement:null,buyNowPrice:null,estimatedValue:0,depositAmount:0,buyerPremium:10,sellerCommission:8,taxClass:"Standard",currency:"USD",enableReserve:true,enableBuyNow:false,hideReserve:true,allowAutoBidding:true,requireDeposit:false,enableBuyerPremium:true,
+  timezone:"Africa/Cairo",previewStart:"",registrationDeadline:"",startImmediately:false,autoExtend:true,extensionTriggerMinutes:2,extensionDurationMinutes:2,maxExtensions:5,autoClose:true,maxBidAmount:null,maxBidsPerCustomer:null,bidApproval:false,anonymousBidding:false,hideBidderIdentity:true,allowWithdrawal:false,withdrawalDeadline:"",blockSeller:true,blockDuplicates:true,countries:"",
+  eligibility:"Registered Customers Only",emailVerification:true,phoneVerification:false,identityVerification:false,businessVerification:false,paymentVerification:true,depositVerification:false,quantityType:"Single Item Auction",availableQuantity:1,unitsPerLot:1,numberOfLots:1,maxLotsPerBidder:1,
+  shippingMethods:["Shipping Available"],weight:"",length:"",width:"",height:"",shippingClass:"Standard",pickupLocation:"",shippingCost:0,handlingFee:0,deliveryTime:"3–5 business days",paymentMethods:["Credit Card","Bank Transfer"],fullPayment:true,partialPayment:false,depositDeduction:true,paymentDeadlineDays:3,latePenalty:0,autoCharge:false,escrow:false,manualPaymentApproval:false,
+  highestBidWins:true,reserveMustBeMet:true,adminApproval:false,sellerApproval:false,multipleWinners:false,autoWinner:true,winnerDeadlineDays:3,notificationTemplate:"Auction winner — payment required",backupWinner:true,offerSecondHighest:true,cancellationPolicy:"Winning bids are binding. Non-payment may result in account suspension.",visibility:"Public",featured:false,homepage:true,showSearch:true,showBidCount:true,showHistory:true,showWatchers:true,showPrice:true,canonicalUrl:"",openGraphImage:"",structuredData:"",schemaMarkup:true,highlighted:false,verified:false,premium:false,watchers:0,
+};
+
+export const AUCTION_TYPES=["Standard Auction","English Auction","Reverse Auction","Dutch Auction","Sealed-Bid Auction","Live Auction","Timed Auction","Buy Now with Auction","Charity Auction","Private Auction"];
+export const AUCTION_STATUSES=["draft","scheduled","upcoming","live","paused","ending-soon","ended","sold","unsold","reserve-not-met","cancelled","archived"];

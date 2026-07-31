@@ -23,7 +23,7 @@ interface ProductRow {
   stock: number;
   categoryId: string | null;
   brandId: string | null;
-  images: { url: string }[];
+  images?: { url: string }[];
 }
 
 interface CategoryRow {
@@ -142,7 +142,7 @@ export default function PosPage() {
           name: product.name,
           sku: product.sku,
           price: Number(product.salePrice ?? product.regularPrice),
-          image: product.images[0]?.url ?? null,
+          image: product.images?.[0]?.url ?? null,
           stock: product.stock,
           quantity: 1,
         },
@@ -297,6 +297,7 @@ export default function PosPage() {
                 {filteredProducts.map((p) => {
                   const price = Number(p.salePrice ?? p.regularPrice);
                   const outOfStock = p.stock <= 0;
+                  const imageUrl = p.images?.[0]?.url;
                   return (
                     <button
                       key={p.id}
@@ -308,9 +309,9 @@ export default function PosPage() {
                       )}
                     >
                       <div className="relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-[8px] bg-secondary">
-                        {p.images[0]?.url ? (
+                        {imageUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img src={p.images[0].url} alt="" className="size-full object-cover" />
+                          <img src={imageUrl} alt="" className="size-full object-cover" />
                         ) : (
                           <span className="text-xs font-bold text-muted-foreground">{p.name.slice(0, 2).toUpperCase()}</span>
                         )}

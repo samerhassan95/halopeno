@@ -12,9 +12,7 @@ import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { OrderService } from './order.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
-import { CreateStorefrontOrderDto } from './dto/create-storefront-order.dto';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
-import { Public } from '../../../common/decorators/public.decorator';
 
 @ApiTags('Sales')
 @ApiBearerAuth()
@@ -26,20 +24,6 @@ export class OrderController {
   @ApiOperation({ summary: 'List orders with pagination, search and sorting' })
   findAll(@Query() query: PaginationQueryDto) {
     return this.service.findAll(query);
-  }
-
-  @Public()
-  @Post('storefront')
-  @ApiOperation({ summary: 'Create a storefront / POS checkout order (public)' })
-  createStorefront(@Body() dto: CreateStorefrontOrderDto) {
-    return this.service.createFromStorefront(dto);
-  }
-
-  @Public()
-  @Get('tracking/:orderNumber')
-  @ApiOperation({ summary: 'Public order tracking by order number' })
-  track(@Param('orderNumber') orderNumber: string) {
-    return this.service.findTrackingByOrderNumber(orderNumber);
   }
 
   @Get(':id')

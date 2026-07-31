@@ -171,8 +171,8 @@ export const resourcePages: ResourcePageConfig[] = [
   {
     route: "colors",
     endpoint: "/commerce/attribute-values",
-    title: "Colors & Attribute Values",
-    subtitle: "Values available for product attributes such as color and size",
+    title: "Attribute Values",
+    subtitle: "Manage reusable values for product attributes such as colors, sizes, materials, storage, patterns, and more.",
     columns: [
       { key: "value", label: "Value" },
       { key: "colorHex", label: "Color" },
@@ -183,7 +183,7 @@ export const resourcePages: ResourcePageConfig[] = [
     route: "taxes",
     endpoint: "/finance/tax-rates",
     title: "Product Taxes",
-    subtitle: "Tax rates applied to products by country and region",
+    subtitle: "Manage product tax classes, tax rates, and tax assignments for your catalog.",
     columns: [
       { key: "country", label: "Country" },
       { key: "state", label: "State" },
@@ -196,7 +196,7 @@ export const resourcePages: ResourcePageConfig[] = [
     route: "stock",
     endpoint: "/inventory/stock-items",
     title: "Product Stock",
-    subtitle: "Live stock levels across every warehouse",
+    subtitle: "Manage inventory levels, warehouse stock, stock movements, reservations, and replenishment.",
     columns: [
       { key: "quantity", label: "Quantity", type: "number" },
       { key: "reserved", label: "Reserved", type: "number" },

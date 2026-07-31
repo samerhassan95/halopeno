@@ -1,8 +1,4 @@
-export const API_URL =
-  process.env.NEXT_PUBLIC_API_URL?.trim() ||
-  (process.env.NODE_ENV === "production"
-    ? "https://halopeno.com/api/v1"
-    : "http://localhost:4000/api/v1");
+export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api/v1";
 const TOKEN_KEY = "vantage-access-token";
 const REFRESH_KEY = "vantage-refresh-token";
 
@@ -69,9 +65,7 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}, retry
       return apiFetch<T>(path, options, false);
     }
     clearTokens();
-    if (typeof window !== "undefined" && window.location.pathname.startsWith("/admin")) {
-      window.location.href = "/admin/login";
-    }
+    if (typeof window !== "undefined") window.location.href = "/admin/login";
     throw new ApiError(401, "Unauthorized");
   }
 
