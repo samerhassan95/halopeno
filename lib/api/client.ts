@@ -65,7 +65,9 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}, retry
       return apiFetch<T>(path, options, false);
     }
     clearTokens();
-    if (typeof window !== "undefined") window.location.href = "/admin/login";
+    if (typeof window !== "undefined" && window.location.pathname.startsWith("/admin")) {
+      window.location.href = "/admin/login";
+    }
     throw new ApiError(401, "Unauthorized");
   }
 
