@@ -3,6 +3,7 @@
 import { BadgeCheck, ThumbsUp } from "lucide-react";
 import { SectionHeading } from "../section-heading";
 import { RatingStars } from "../rating-stars";
+import { FoodImage } from "../food-image";
 import { useCatalogStore } from "@/lib/storefront/store/catalog-store";
 import { overallRating, totalReviews } from "@/lib/storefront/data/reviews";
 import { Reveal } from "../reveal";
@@ -19,25 +20,30 @@ export function ReviewsSection({ data }: { data?: SectionCmsData } = {}) {
   const visibleCount = Math.max(1, cmsNumber(data, "visibleCount", 4));
   const cmsReview = cmsText(data, "review", "");
   const cmsName = cmsText(data, "customerName", "");
+  const cmsRole = cmsText(data, "customerRole", "");
+  const cmsPhoto = cmsText(data, "customerPhoto", "");
   const cmsRating = cmsNumber(data, "rating", 5);
 
-  const displayReviews =
-    reviews.length > 0
-      ? reviews.slice(0, visibleCount)
-      : cmsReview
-        ? [
-            {
-              id: "cms-review",
-              avatar: cmsName.slice(0, 2).toUpperCase() || "CU",
-              customerName: cmsName || "Customer",
-              verified: true,
-              rating: cmsRating,
-              title: title,
-              body: cmsReview,
-              helpfulCount: 0,
-            },
-          ]
-        : [];
+  const cmsCard = cmsReview
+    ? {
+        id: "cms-review",
+        avatar: cmsName.slice(0, 2).toUpperCase() || "CU",
+        customerName: cmsName || "Customer",
+        verified: true,
+        rating: cmsRating,
+        title: cmsRole || "Featured review",
+        body: cmsReview,
+        helpfulCount: 0,
+        photo: cmsPhoto,
+      }
+    : null;
+
+  const catalogCards = reviews.slice(0, Math.max(0, visibleCount - (cmsCard ? 1 : 0))).map((review) => ({
+    ...review,
+    photo: "",
+  }));
+
+  const displayReviews = cmsCard ? [cmsCard, ...catalogCards].slice(0, visibleCount) : catalogCards;
 
   return (
     <section className="mx-auto max-w-[1440px] px-4 py-16 sm:px-6 lg:px-10">
@@ -53,9 +59,18 @@ export function ReviewsSection({ data }: { data?: SectionCmsData } = {}) {
               className="flex flex-col gap-3 rounded-[24px] border border-primary/10 bg-card p-6 shadow-soft sm:p-7"
             >
               <div className="flex items-center gap-3">
-                <span className="flex size-10 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-                  {review.avatar}
-                </span>
+                {review.photo ? (
+                  <FoodImage
+                    src={review.photo}
+                    alt={review.customerName}
+                    containerClassName="size-10 overflow-hidden rounded-full"
+                    className="size-10 rounded-full object-cover"
+                  />
+                ) : (
+                  <span className="flex size-10 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
+                    {review.avatar}
+                  </span>
+                )}
                 <div>
                   <p className="flex items-center gap-1 text-sm font-semibold text-brown">
                     {review.customerName}

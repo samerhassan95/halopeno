@@ -8,8 +8,13 @@ import { WhyChooseUs } from "@/components/storefront/home/why-choose-us";
 import { AboutTeaser } from "@/components/storefront/home/about-teaser";
 import { ReviewsSection } from "@/components/storefront/home/reviews-section";
 import { BlogTeaser } from "@/components/storefront/home/blog-teaser";
+import { SectionShell } from "@/components/storefront/home/section-shell";
 import { API_URL } from "@/lib/api/client";
-import { DEFAULT_HOMEPAGE_SECTIONS, type HomepageSectionConfig } from "@/lib/storefront/homepage-sections";
+import {
+  DEFAULT_HOMEPAGE_SECTIONS,
+  hydrateHomepageSection,
+  type HomepageSectionConfig,
+} from "@/lib/storefront/homepage-sections";
 import { getActiveTheme } from "@/lib/storefront/active-theme";
 import { ElectroHubHomepage } from "@/components/storefront/themes/electrohub";
 import type { SectionCmsData } from "@/lib/storefront/section-cms";
@@ -34,10 +39,10 @@ async function getHomepageSections(): Promise<HomepageSectionConfig[]> {
     if (!res.ok) throw new Error("bad status");
     const json = await res.json();
     const value = json.value as HomepageSectionConfig[] | null;
-    if (!value?.length) return DEFAULT_HOMEPAGE_SECTIONS;
-    return value;
+    if (!value?.length) return DEFAULT_HOMEPAGE_SECTIONS.map(hydrateHomepageSection);
+    return value.map(hydrateHomepageSection);
   } catch {
-    return DEFAULT_HOMEPAGE_SECTIONS;
+    return DEFAULT_HOMEPAGE_SECTIONS.map(hydrateHomepageSection);
   }
 }
 
@@ -50,7 +55,12 @@ export default async function StorefrontHomePage() {
     <>
       {ordered.map((s) => {
         const Component = COMPONENT_MAP[s.type];
-        return Component ? <Component key={s.id} data={s.data} /> : null;
+        if (!Component) return null;
+        return (
+          <SectionShell key={s.id} settings={s.settings}>
+            <Component data={s.data} />
+          </SectionShell>
+        );
       })}
     </>
   );
