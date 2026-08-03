@@ -1,6 +1,17 @@
 import type { HomepageSectionType } from "@/lib/storefront/homepage-sections";
 
-export type SectionFieldType = "text" | "textarea" | "number" | "select" | "toggle" | "color" | "image" | "video" | "date";
+export type SectionFieldType =
+  | "text"
+  | "textarea"
+  | "number"
+  | "select"
+  | "toggle"
+  | "color"
+  | "image"
+  | "video"
+  | "date"
+  | "product-picker"
+  | "collection-picker";
 
 export interface SectionField {
   key: string;
@@ -28,6 +39,8 @@ const titleFields: SectionField[] = [
 const productFields: SectionField[] = [
   ...titleFields,
   { key: "productSource", label: "Product source", type: "select", options: [{ label: "Automatic", value: "automatic" }, { label: "Manual selection", value: "manual" }, { label: "Collection", value: "collection" }] },
+  { key: "productIds", label: "Selected products", type: "product-picker" },
+  { key: "collectionSlug", label: "Collection", type: "collection-picker" },
   { key: "sort", label: "Sorting", type: "select", options: [{ label: "Featured", value: "featured" }, { label: "Newest", value: "newest" }, { label: "Best selling", value: "best-selling" }, { label: "Price: low to high", value: "price-asc" }] },
   { key: "limit", label: "Maximum products", type: "number", min: 2, max: 24 },
   { key: "desktopColumns", label: "Desktop columns", type: "number", min: 2, max: 6 },
@@ -58,8 +71,8 @@ export const SECTION_SCHEMAS: Record<HomepageSectionType, SectionSchema> = {
     defaultData: { eyebrow: "Fresh from our kitchen", title: "Small jar. Big kick.", subtitle: "Bold flavor for every table.", description: "Discover small-batch favorites crafted with real ingredients.", primaryCta: "Shop now", primaryLink: "/shop", secondaryCta: "Our story", secondaryLink: "/about", desktopImage: "", mobileImage: "", video: "", imageAlt: "Featured storefront collection", alignment: "left", overlay: "#000000", overlayOpacity: 24, autoplay: true, duration: 6, arrows: true, dots: true },
   },
   delivery_bar: { label: "Delivery / pickup bar", description: "A compact service announcement strip.", fields: [{ key: "message", label: "Message", type: "text", required: true }, { key: "secondaryMessage", label: "Secondary message", type: "text" }, { key: "icon", label: "Icon style", type: "select", options: [{ label: "Delivery", value: "delivery" }, { label: "Store", value: "store" }, { label: "None", value: "none" }] }, { key: "link", label: "Link", type: "text" }], defaultData: { message: "Free delivery on orders over $75", secondaryMessage: "Pickup available today", icon: "delivery", link: "/shop" } },
-  signature_dishes: { label: "Signature products", description: "A curated product collection.", fields: productFields, defaultData: { title: "Signature favorites", subtitle: "The products our customers return to.", productSource: "automatic", sort: "featured", limit: 4, desktopColumns: 4, mobileColumns: 2, showPrice: true, showRating: true, showWishlist: true, showAddToCart: true, viewAllText: "View all", viewAllLink: "/shop" } },
-  best_sellers: { label: "Best sellers", description: "Top-performing products from the catalog.", fields: productFields, defaultData: { title: "Best sellers", subtitle: "Most loved by our community.", productSource: "automatic", sort: "best-selling", limit: 8, desktopColumns: 4, mobileColumns: 2, showPrice: true, showRating: true, showWishlist: true, showAddToCart: true, viewAllText: "Shop best sellers", viewAllLink: "/shop" } },
+  signature_dishes: { label: "Signature products", description: "A curated product collection.", fields: productFields, defaultData: { title: "Signature favorites", subtitle: "The products our customers return to.", productSource: "automatic", productIds: [], collectionSlug: "", sort: "featured", limit: 4, desktopColumns: 4, mobileColumns: 2, showPrice: true, showRating: true, showWishlist: true, showAddToCart: true, viewAllText: "View all", viewAllLink: "/shop" } },
+  best_sellers: { label: "Best sellers", description: "Top-performing products from the catalog.", fields: productFields, defaultData: { title: "Best sellers", subtitle: "Most loved by our community.", productSource: "automatic", productIds: [], collectionSlug: "", sort: "best-selling", limit: 8, desktopColumns: 4, mobileColumns: 2, showPrice: true, showRating: true, showWishlist: true, showAddToCart: true, viewAllText: "Shop best sellers", viewAllLink: "/shop" } },
   offers: { label: "Promotional offers", description: "Scheduled campaign media and messaging.", fields: [...titleFields, { key: "badge", label: "Discount badge", type: "text" }, { key: "media", label: "Promotional image", type: "image" }, { key: "mobileMedia", label: "Mobile image", type: "image" }, { key: "video", label: "Optional video", type: "video" }, { key: "ctaText", label: "CTA text", type: "text" }, { key: "ctaLink", label: "CTA link", type: "text" }, { key: "countdown", label: "Show countdown", type: "toggle" }, { key: "endDate", label: "Offer end date", type: "date" }], defaultData: { title: "A special offer", subtitle: "Limited time only.", badge: "Save 20%", media: "", mobileMedia: "", video: "", ctaText: "Shop offer", ctaLink: "/offers", countdown: true, endDate: "" } },
   why_choose_us: { label: "Why choose us", description: "Benefits and trust signals.", fields: [...titleFields, { key: "benefit1", label: "Benefit one", type: "text" }, { key: "benefit2", label: "Benefit two", type: "text" }, { key: "benefit3", label: "Benefit three", type: "text" }, { key: "benefit4", label: "Benefit four", type: "text" }], defaultData: { title: "Why customers choose us", subtitle: "Thoughtful service at every step.", benefit1: "Premium quality", benefit2: "Secure payment", benefit3: "Fast delivery", benefit4: "Easy returns" } },
   about_teaser: { label: "Image with text", description: "Editorial brand storytelling block.", fields: [...titleFields, { key: "body", label: "Body copy", type: "textarea" }, { key: "image", label: "Image", type: "image" }, { key: "imageAlt", label: "Image alt text", type: "text", required: true }, { key: "ctaText", label: "CTA text", type: "text" }, { key: "ctaLink", label: "CTA link", type: "text" }, { key: "imagePosition", label: "Image position", type: "select", options: [{ label: "Left", value: "left" }, { label: "Right", value: "right" }] }], defaultData: { title: "Our story", subtitle: "Made with purpose.", body: "Share the craft, people, and principles behind your brand.", image: "", imageAlt: "Our brand story", ctaText: "Learn more", ctaLink: "/about", imagePosition: "left" } },

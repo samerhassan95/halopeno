@@ -6,18 +6,8 @@ import { SectionHeading } from "../section-heading";
 import { ProductCard } from "../product-card";
 import { useCatalogStore } from "@/lib/storefront/store/catalog-store";
 import { Reveal } from "../reveal";
-import { cmsNumber, cmsText, type SectionCmsData } from "@/lib/storefront/section-cms";
-
-function sortProducts<T extends { id: string; name: string; price: number; bestSeller?: boolean }>(
-  products: T[],
-  sort: string
-) {
-  const next = [...products];
-  if (sort === "best-selling") return next.sort((a, b) => Number(b.bestSeller) - Number(a.bestSeller));
-  if (sort === "price-asc") return next.sort((a, b) => a.price - b.price);
-  if (sort === "newest") return next.reverse();
-  return next;
-}
+import { cmsText, type SectionCmsData } from "@/lib/storefront/section-cms";
+import { sectionCardFlags, selectSectionProducts } from "@/lib/storefront/select-products";
 
 export function SignatureDishes({ data }: { data?: SectionCmsData } = {}) {
   const products = useCatalogStore((s) => s.products);
@@ -25,9 +15,8 @@ export function SignatureDishes({ data }: { data?: SectionCmsData } = {}) {
   const subtitle = cmsText(data, "subtitle", "");
   const viewAllText = cmsText(data, "viewAllText", "Shop all flavors");
   const viewAllLink = cmsText(data, "viewAllLink", "/shop");
-  const limit = Math.max(2, cmsNumber(data, "limit", 5));
-  const sort = cmsText(data, "sort", "featured");
-  const sorted = sortProducts(products, sort).slice(0, limit);
+  const flags = sectionCardFlags(data);
+  const sorted = selectSectionProducts(products, data);
   const [featured, ...rest] = sorted;
 
   if (!featured) return null;
@@ -47,12 +36,12 @@ export function SignatureDishes({ data }: { data?: SectionCmsData } = {}) {
 
       <div className="mt-10 grid gap-6 lg:grid-cols-2">
         <Reveal className="lg:row-span-2">
-          <ProductCard product={featured} variant="featured" />
+          <ProductCard product={featured} variant="featured" {...flags} />
         </Reveal>
         <div className="grid gap-6 sm:grid-cols-2">
           {rest.slice(0, 4).map((p, i) => (
             <Reveal key={p.id} delay={0.1 * (i + 1)}>
-              <ProductCard product={p} />
+              <ProductCard product={p} {...flags} />
             </Reveal>
           ))}
         </div>

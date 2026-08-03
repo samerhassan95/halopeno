@@ -22,9 +22,17 @@ const spiceCount: Record<string, number> = { mild: 1, medium: 2, hot: 3, "extra-
 export function ProductCard({
   product,
   variant = "default",
+  showPrice = true,
+  showRating = true,
+  showWishlist = true,
+  showAddToCart = true,
 }: {
   product: Product;
   variant?: "default" | "featured" | "compact";
+  showPrice?: boolean;
+  showRating?: boolean;
+  showWishlist?: boolean;
+  showAddToCart?: boolean;
 }) {
   const { items, addItem, updateQty } = useCartStore();
   const { isFavorite, toggle } = useWishlistStore();
@@ -83,17 +91,19 @@ export function ProductCard({
           {discountPct && <Badge variant="discount">-{discountPct}%</Badge>}
           {product.isNew && <Badge variant="new">New</Badge>}
         </div>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            toggle(product.id);
-          }}
-          className="absolute right-3 top-3 flex size-9 items-center justify-center rounded-full bg-white/90 text-foreground shadow-sm backdrop-blur transition-transform hover:scale-110"
-          aria-label="Toggle favorite"
-        >
-          <Heart className={cn("size-4", favorite && "fill-primary text-primary")} />
-        </button>
+        {showWishlist ? (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              toggle(product.id);
+            }}
+            className="absolute right-3 top-3 flex size-9 items-center justify-center rounded-full bg-white/90 text-foreground shadow-sm backdrop-blur transition-transform hover:scale-110"
+            aria-label="Toggle favorite"
+          >
+            <Heart className={cn("size-4", favorite && "fill-primary text-primary")} />
+          </button>
+        ) : null}
       </Link>
 
       <div className={cn("flex flex-1 flex-col gap-2.5 p-5", isFeatured && "sm:justify-center sm:p-7")}>
@@ -116,29 +126,37 @@ export function ProductCard({
         </Link>
         <p className="line-clamp-2 text-sm text-muted-foreground">{description}</p>
 
-        <div className="flex items-center gap-1.5 text-sm">
-          <RatingStars rating={product.rating} size={13} />
-          <span className="font-medium text-foreground">{product.rating}</span>
-          <span className="text-muted-foreground">({product.reviewCount})</span>
-        </div>
+        {showRating ? (
+          <div className="flex items-center gap-1.5 text-sm">
+            <RatingStars rating={product.rating} size={13} />
+            <span className="font-medium text-foreground">{product.rating}</span>
+            <span className="text-muted-foreground">({product.reviewCount})</span>
+          </div>
+        ) : null}
 
         <div className="mt-auto flex items-center justify-between pt-2">
-          <div className="flex items-baseline gap-2">
-            <span className="font-display text-lg font-bold text-primary">
-              {formatSAR(product.price)}
-            </span>
-            {product.oldPrice && (
-              <span className="text-sm text-muted-foreground line-through">{formatSAR(product.oldPrice)}</span>
-            )}
-          </div>
-
-          {cartLine ? (
-            <QuantityStepper qty={cartLine.qty} onChange={(q) => updateQty(cartLine.lineId, q)} size="sm" />
+          {showPrice ? (
+            <div className="flex items-baseline gap-2">
+              <span className="font-display text-lg font-bold text-primary">
+                {formatSAR(product.price)}
+              </span>
+              {product.oldPrice && (
+                <span className="text-sm text-muted-foreground line-through">{formatSAR(product.oldPrice)}</span>
+              )}
+            </div>
           ) : (
-            <Button size="icon" onClick={handleAdd} aria-label="Add to cart">
-              <ShoppingBag className="size-4" />
-            </Button>
+            <span />
           )}
+
+          {showAddToCart ? (
+            cartLine ? (
+              <QuantityStepper qty={cartLine.qty} onChange={(q) => updateQty(cartLine.lineId, q)} size="sm" />
+            ) : (
+              <Button size="icon" onClick={handleAdd} aria-label="Add to cart">
+                <ShoppingBag className="size-4" />
+              </Button>
+            )
+          ) : null}
         </div>
       </div>
     </div>
