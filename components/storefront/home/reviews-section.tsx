@@ -34,7 +34,7 @@ export function ReviewsSection({ data }: { data?: SectionCmsData } = {}) {
               rating: cmsRating,
               title: title,
               body: cmsReview,
-              helpful: 0,
+              helpfulCount: 0,
             },
           ]
         : [];
@@ -67,7 +67,7 @@ export function ReviewsSection({ data }: { data?: SectionCmsData } = {}) {
               <p className="font-display text-[15px] font-semibold text-brown">{review.title}</p>
               <p className="line-clamp-4 text-sm text-muted-foreground">{review.body}</p>
               <button className="mt-auto flex items-center gap-1.5 self-start text-xs text-muted-foreground hover:text-primary">
-                <ThumbsUp className="size-3.5" /> Helpful ({review.helpful})
+                <ThumbsUp className="size-3.5" /> Helpful ({review.helpfulCount})
               </button>
             </div>
           ))}
