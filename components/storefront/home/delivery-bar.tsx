@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { MapPin, LocateFixed, Clock } from "lucide-react";
+import Link from "next/link";
+import { MapPin, LocateFixed, Clock, Store, Truck } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -9,11 +10,18 @@ import { toast } from "sonner";
 import { cmsText, type SectionCmsData } from "@/lib/storefront/section-cms";
 
 export function DeliveryBar({ data }: { data?: SectionCmsData } = {}) {
-  const message = cmsText(data, "message", "");
-  const secondaryMessage = cmsText(data, "secondaryMessage", "");
-  const [mode, setMode] = React.useState<"delivery" | "pickup">("delivery");
+  const message = cmsText(data, "message", "Free delivery on orders over $75");
+  const secondaryMessage = cmsText(data, "secondaryMessage", "Pickup available today");
+  const icon = cmsText(data, "icon", "delivery");
+  const link = cmsText(data, "link", "");
+  const [mode, setMode] = React.useState<"delivery" | "pickup">(icon === "store" ? "pickup" : "delivery");
   const [address, setAddress] = React.useState("");
   const [checked, setChecked] = React.useState(false);
+
+  React.useEffect(() => {
+    if (icon === "store") setMode("pickup");
+    if (icon === "delivery") setMode("delivery");
+  }, [icon]);
 
   function handleCheck(e: React.FormEvent) {
     e.preventDefault();
@@ -21,29 +29,46 @@ export function DeliveryBar({ data }: { data?: SectionCmsData } = {}) {
     toast.success(message || "Great news, we deliver to your area!");
   }
 
+  const Icon = icon === "store" ? Store : icon === "none" ? null : Truck;
+
   return (
     <section className="relative z-10 mx-auto -mt-5 max-w-[1280px] px-4 sm:px-6 lg:px-10">
       <div className="rounded-[28px] border border-primary/10 bg-card/95 p-4 shadow-soft-lg backdrop-blur sm:p-6">
-        {(message || secondaryMessage) && (
-          <div className="mb-4 rounded-2xl bg-secondary/80 px-4 py-3 text-sm text-brown">
-            {message && <p className="font-semibold">{message}</p>}
-            {secondaryMessage && <p className="mt-1 text-muted-foreground">{secondaryMessage}</p>}
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex items-start gap-3 rounded-2xl bg-secondary/80 px-4 py-3 text-sm text-brown">
+            {Icon ? (
+              <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <Icon className="size-4" />
+              </span>
+            ) : null}
+            <div>
+              {message ? <p className="font-semibold">{message}</p> : null}
+              {secondaryMessage ? <p className="mt-1 text-muted-foreground">{secondaryMessage}</p> : null}
+            </div>
           </div>
-        )}
-        <div className="mb-4 inline-flex rounded-full bg-secondary p-1">
-          {(["delivery", "pickup"] as const).map((m) => (
-            <button
-              key={m}
-              onClick={() => setMode(m)}
-              className={cn(
-                "rounded-full px-5 py-2 text-sm font-semibold capitalize transition-colors",
-                mode === m ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground"
-              )}
-            >
-              {m}
-            </button>
-          ))}
+          {link ? (
+            <Button asChild variant="outline" className="shrink-0 rounded-full">
+              <Link href={link}>Learn more</Link>
+            </Button>
+          ) : null}
         </div>
+
+        {icon !== "none" ? (
+          <div className="mb-4 inline-flex rounded-full bg-secondary p-1">
+            {(["delivery", "pickup"] as const).map((m) => (
+              <button
+                key={m}
+                onClick={() => setMode(m)}
+                className={cn(
+                  "rounded-full px-5 py-2 text-sm font-semibold capitalize transition-colors",
+                  mode === m ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground"
+                )}
+              >
+                {m}
+              </button>
+            ))}
+          </div>
+        ) : null}
 
         <form onSubmit={handleCheck} className="flex flex-col gap-3 sm:flex-row">
           <div className="relative flex-1">

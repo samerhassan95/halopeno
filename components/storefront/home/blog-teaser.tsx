@@ -10,6 +10,7 @@ export function BlogTeaser({ data }: { data?: SectionCmsData } = {}) {
   const title = cmsText(data, "title", "From the Halopeno Journal");
   const subtitle = cmsText(data, "subtitle", "");
   const viewAllText = cmsText(data, "viewAllText", "Visit the blog");
+  const viewAllLink = cmsText(data, "viewAllLink", "/blog");
   const category = cmsText(data, "category", "").toLowerCase();
   const articleCount = Math.max(1, cmsNumber(data, "articleCount", 3));
   const sort = cmsText(data, "sort", "newest");
@@ -21,6 +22,7 @@ export function BlogTeaser({ data }: { data?: SectionCmsData } = {}) {
   let posts = [...blogPosts];
   if (category) posts = posts.filter((post) => post.category.toLowerCase().includes(category));
   if (sort === "oldest") posts = posts.reverse();
+  if (sort === "featured") posts = posts.sort((a, b) => a.title.localeCompare(b.title));
   posts = posts.slice(0, articleCount);
 
   return (
@@ -29,11 +31,13 @@ export function BlogTeaser({ data }: { data?: SectionCmsData } = {}) {
         <Reveal>
           <SectionHeading title={title} description={subtitle || undefined} align="left" />
         </Reveal>
-        <Reveal delay={0.1}>
-          <Link href="/blog" className="flex items-center gap-1 text-sm font-semibold text-primary hover:underline">
-            {viewAllText} <ArrowUpRight className="size-4" />
-          </Link>
-        </Reveal>
+        {viewAllText ? (
+          <Reveal delay={0.1}>
+            <Link href={viewAllLink} className="flex items-center gap-1 text-sm font-semibold text-primary hover:underline">
+              {viewAllText} <ArrowUpRight className="size-4" />
+            </Link>
+          </Reveal>
+        ) : null}
       </div>
 
       <div className="mt-10 grid gap-6 sm:grid-cols-3">
@@ -54,9 +58,11 @@ export function BlogTeaser({ data }: { data?: SectionCmsData } = {}) {
                 <span className="text-xs font-semibold uppercase tracking-wide text-gold">{post.category}</span>
                 <h3 className="mt-1.5 font-display text-lg font-semibold leading-snug text-brown">{post.title}</h3>
                 {showExcerpt ? <p className="mt-1.5 line-clamp-2 text-sm text-muted-foreground">{post.excerpt}</p> : null}
-                <p className="mt-3 text-xs text-muted-foreground">
-                  {[showDate ? post.readTime : null, showAuthor ? post.author : null].filter(Boolean).join(" · ")}
-                </p>
+                {(showDate || showAuthor) && (
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    {[showDate ? post.readTime : null, showAuthor ? post.author : null].filter(Boolean).join(" · ")}
+                  </p>
+                )}
               </div>
             </Link>
           </Reveal>

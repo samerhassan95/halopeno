@@ -34,6 +34,7 @@ export function SectionShell({
   const customPadding =
     merged.paddingTop !== DEFAULT_SECTION_SETTINGS.paddingTop ||
     merged.paddingBottom !== DEFAULT_SECTION_SETTINGS.paddingBottom;
+  const customWidth = merged.width === "full" || merged.maxWidth !== DEFAULT_SECTION_SETTINGS.maxWidth;
 
   const style: CSSProperties = {
     paddingTop: customPadding ? merged.paddingTop : undefined,
@@ -43,6 +44,9 @@ export function SectionShell({
     backgroundSize: merged.backgroundImage ? "cover" : undefined,
     backgroundPosition: "center",
     borderRadius: merged.borderRadius || undefined,
+    borderColor: merged.borderColor !== DEFAULT_SECTION_SETTINGS.borderColor ? merged.borderColor : undefined,
+    borderWidth: merged.borderColor !== DEFAULT_SECTION_SETTINGS.borderColor ? 1 : undefined,
+    borderStyle: merged.borderColor !== DEFAULT_SECTION_SETTINGS.borderColor ? "solid" : undefined,
   };
 
   return (
@@ -51,7 +55,7 @@ export function SectionShell({
       className={cn(
         "relative",
         !merged.desktopVisible && "lg:hidden",
-        !merged.tabletVisible && "max-lg:hidden md:hidden",
+        !merged.tabletVisible && "md:max-lg:hidden",
         !merged.mobileVisible && "max-md:hidden",
         merged.cssClass,
         className
@@ -68,7 +72,13 @@ export function SectionShell({
           playsInline
         />
       ) : null}
-      {children}
+      {customWidth && merged.width === "contained" ? (
+        <div className="mx-auto w-full" style={{ maxWidth: merged.maxWidth }}>
+          {children}
+        </div>
+      ) : (
+        children
+      )}
     </div>
   );
 }

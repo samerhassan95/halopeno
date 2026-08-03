@@ -22,12 +22,12 @@ export function WhyChooseUs({ data }: { data?: SectionCmsData } = {}) {
   const mainFeatures = DEFAULT_MAIN.map((feature, index) => ({
     icon: MAIN_ICONS[index],
     title: cmsText(data, `benefit${index + 1}`, feature.title),
-    desc: feature.desc,
-  }));
+    desc: cmsText(data, `benefit${index + 1}Desc`, feature.desc),
+  })).filter((feature) => feature.title.trim());
   const extraFeatures = DEFAULT_EXTRA.map((label, index) => ({
     icon: EXTRA_ICONS[index],
-    title: label,
-  }));
+    title: cmsText(data, `chip${index + 1}`, label),
+  })).filter((feature) => feature.title.trim());
 
   return (
     <section className="mx-auto max-w-[1440px] px-4 py-16 sm:px-6 lg:px-10">
@@ -60,34 +60,38 @@ export function WhyChooseUs({ data }: { data?: SectionCmsData } = {}) {
               <h3 className={cn("mt-5 font-display text-xl font-bold", index < 2 ? "text-inherit" : "text-brown")}>
                 {f.title}
               </h3>
-              <p
-                className={cn(
-                  "mt-2 max-w-sm text-sm leading-relaxed",
-                  index === 0 && "text-primary-foreground/75",
-                  index === 1 && "text-accent-foreground/75",
-                  index > 1 && "text-muted-foreground"
-                )}
-              >
-                {f.desc}
-              </p>
+              {f.desc ? (
+                <p
+                  className={cn(
+                    "mt-2 max-w-sm text-sm leading-relaxed",
+                    index === 0 && "text-primary-foreground/75",
+                    index === 1 && "text-accent-foreground/75",
+                    index > 1 && "text-muted-foreground"
+                  )}
+                >
+                  {f.desc}
+                </p>
+              ) : null}
             </div>
           ))}
         </div>
       </Reveal>
 
-      <Reveal delay={0.2}>
-        <div className="mt-6 flex flex-wrap justify-center gap-3">
-          {extraFeatures.map((f) => (
-            <div
-              key={f.title}
-              className="inline-flex items-center gap-2 rounded-full border border-primary/10 bg-card px-4 py-2 text-sm font-medium text-brown shadow-soft"
-            >
-              <f.icon className="size-4 text-primary" />
-              {f.title}
-            </div>
-          ))}
-        </div>
-      </Reveal>
+      {extraFeatures.length ? (
+        <Reveal delay={0.2}>
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            {extraFeatures.map((f) => (
+              <div
+                key={f.title}
+                className="inline-flex items-center gap-2 rounded-full border border-primary/10 bg-card px-4 py-2 text-sm font-medium text-brown shadow-soft"
+              >
+                <f.icon className="size-4 text-primary" />
+                {f.title}
+              </div>
+            ))}
+          </div>
+        </Reveal>
+      ) : null}
     </section>
   );
 }

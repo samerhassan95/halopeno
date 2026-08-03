@@ -23,7 +23,10 @@ export function OffersSection({ data }: { data?: SectionCmsData } = {}) {
     media ||
       video ||
       badge ||
-      (typeof data?.title === "string" && data.title.trim() && data.title !== "A special offer" && data.title !== "Special Offers")
+      subtitle ||
+      endDate ||
+      (typeof data?.title === "string" && data.title.trim()) ||
+      (typeof data?.ctaText === "string" && data.ctaText.trim())
   );
 
   return (
@@ -42,16 +45,16 @@ export function OffersSection({ data }: { data?: SectionCmsData } = {}) {
       {hasCmsPromo ? (
         <Reveal delay={0.08}>
           <div className="mt-10 overflow-hidden rounded-[28px] border border-primary/10 bg-card shadow-soft lg:grid lg:grid-cols-2">
-            <div className="relative aspect-[16/10] lg:aspect-auto lg:min-h-[320px]">
+            <div className="relative aspect-[16/10] bg-secondary/40 lg:aspect-auto lg:min-h-[320px]">
               {video ? (
                 <video className="absolute inset-0 size-full object-cover" src={video} autoPlay muted loop playsInline />
-              ) : (
+              ) : media ? (
                 <>
                   <FoodImage
                     src={media}
                     alt={title}
-                    containerClassName="absolute inset-0 size-full max-lg:block lg:block"
-                    className="size-full object-cover max-md:hidden"
+                    containerClassName="absolute inset-0 size-full"
+                    className={cnMobile(mobileMedia)}
                   />
                   {mobileMedia ? (
                     <FoodImage
@@ -62,6 +65,10 @@ export function OffersSection({ data }: { data?: SectionCmsData } = {}) {
                     />
                   ) : null}
                 </>
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/20 to-accent/20">
+                  <span className="font-display text-4xl font-bold text-primary/40">{badge || title}</span>
+                </div>
               )}
               {badge ? (
                 <span className="absolute left-4 top-4 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">
@@ -92,4 +99,8 @@ export function OffersSection({ data }: { data?: SectionCmsData } = {}) {
       )}
     </section>
   );
+}
+
+function cnMobile(mobileMedia: string) {
+  return mobileMedia ? "size-full object-cover max-md:hidden" : "size-full object-cover";
 }

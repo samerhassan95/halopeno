@@ -12,6 +12,11 @@ export function AboutTeaser({ data }: { data?: SectionCmsData } = {}) {
     "body",
     "Halopeno began with a simple question: why is it so hard to find a pickled jalapeño that actually tastes like something? So we started pickling our own, small batches at a time, until every jar had the crunch, tang and heat we were looking for."
   );
+  const body2 = cmsText(
+    data,
+    "body2",
+    "Six signature flavors later, every jar is still made the same way. No fillers, no shortcuts, no preservatives. Just peppers doing what they do best."
+  );
   const image = cmsText(data, "image", "/images/lifestyle/family-table-vine-fire.jpg");
   const imageAlt = cmsText(data, "imageAlt", "A family sharing a meal with Halopeno Vine Fire relish");
   const ctaText = cmsText(data, "ctaText", "Read Our Story");
@@ -36,10 +41,13 @@ export function AboutTeaser({ data }: { data?: SectionCmsData } = {}) {
         <Reveal delay={0.1} className={imageFirst ? undefined : "lg:order-1"}>
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-gold">{subtitle}</p>
           <h2 className="font-display text-[32px] font-semibold leading-tight text-brown sm:text-[38px]">{title}</h2>
-          <p className="mt-4 whitespace-pre-line text-[15px] leading-relaxed text-muted-foreground">{body}</p>
-          <Button variant="outline" className="mt-6" asChild>
-            <Link href={ctaLink}>{ctaText}</Link>
-          </Button>
+          {body ? <p className="mt-4 whitespace-pre-line text-[15px] leading-relaxed text-muted-foreground">{body}</p> : null}
+          {body2 ? <p className="mt-3 whitespace-pre-line text-[15px] leading-relaxed text-muted-foreground">{body2}</p> : null}
+          {ctaText ? (
+            <Button variant="outline" className="mt-6" asChild>
+              <Link href={ctaLink}>{ctaText}</Link>
+            </Button>
+          ) : null}
         </Reveal>
       </div>
     </section>
