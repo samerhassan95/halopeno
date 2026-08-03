@@ -6,10 +6,15 @@ import { SectionHeading } from "../section-heading";
 import { ProductCard } from "../product-card";
 import { useCatalogStore } from "@/lib/storefront/store/catalog-store";
 import { Reveal } from "../reveal";
+import { cmsNumber, cmsText, type SectionCmsData } from "@/lib/storefront/section-cms";
 
-export function SignatureDishes() {
+export function SignatureDishes({ data }: { data?: SectionCmsData } = {}) {
   const products = useCatalogStore((s) => s.products);
-  const [featured, ...rest] = products.slice(0, 5);
+  const title = cmsText(data, "title", "Our Signature Flavors");
+  const viewAllText = cmsText(data, "viewAllText", "Shop all flavors");
+  const viewAllLink = cmsText(data, "viewAllLink", "/shop");
+  const limit = Math.max(2, cmsNumber(data, "limit", 5));
+  const [featured, ...rest] = products.slice(0, limit);
 
   if (!featured) return null;
 
@@ -17,11 +22,11 @@ export function SignatureDishes() {
     <section className="mx-auto max-w-[1440px] px-4 py-16 sm:px-6 lg:px-10">
       <div className="flex flex-col items-center justify-between gap-4 sm:flex-row sm:items-end">
         <Reveal>
-          <SectionHeading title="Our Signature Flavors" align="left" />
+          <SectionHeading title={title} align="left" />
         </Reveal>
         <Reveal delay={0.1}>
-          <Link href="/shop" className="flex items-center gap-1 text-sm font-semibold text-primary hover:underline">
-            Shop all flavors <ArrowUpRight className="size-4" />
+          <Link href={viewAllLink} className="flex items-center gap-1 text-sm font-semibold text-primary hover:underline">
+            {viewAllText} <ArrowUpRight className="size-4" />
           </Link>
         </Reveal>
       </div>

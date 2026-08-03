@@ -247,20 +247,20 @@ function BuilderPreview({ sections, selectedId, device, onSelect, onDuplicate, o
 
 function PreviewSection({ section, selected, onSelect, onDuplicate, onToggle, onDelete }: { section: HomepageSectionConfig; selected: boolean; onSelect: () => void; onDuplicate: () => void; onToggle: () => void; onDelete: () => void }) {
   const settings = { ...DEFAULT_SECTION_SETTINGS, ...section.settings };
-  return <section id={`preview-${section.id}`} onClick={onSelect} className={cn("group relative cursor-pointer border-2 border-transparent transition-colors hover:border-primary/50", selected && "z-10 border-primary ring-2 ring-primary/20")} style={{ backgroundColor: settings.backgroundColor !== DEFAULT_SECTION_SETTINGS.backgroundColor ? settings.backgroundColor : undefined, backgroundImage: settings.backgroundImage ? `url(${settings.backgroundImage})` : undefined, backgroundSize: "cover", borderRadius: settings.borderRadius }}><ActualStorefrontSection type={section.type} />{selected && <div className="absolute right-2 top-2 z-30 flex items-center gap-1 rounded-lg border bg-white p-1 text-foreground shadow-lg"><Button size="sm" onClick={(event) => { event.stopPropagation(); onSelect(); }}>Edit</Button><Button variant="ghost" size="icon-sm" onClick={(event) => { event.stopPropagation(); onDuplicate(); }}><Copy className="size-3.5" /></Button><Button variant="ghost" size="icon-sm" onClick={(event) => { event.stopPropagation(); onToggle(); }}><EyeOff className="size-3.5" /></Button><Button variant="ghost" size="icon-sm" onClick={(event) => { event.stopPropagation(); onDelete(); }}><Trash2 className="size-3.5 text-destructive" /></Button></div>}</section>;
+  return <section id={`preview-${section.id}`} onClick={onSelect} className={cn("group relative cursor-pointer border-2 border-transparent transition-colors hover:border-primary/50", selected && "z-10 border-primary ring-2 ring-primary/20")} style={{ backgroundColor: settings.backgroundColor !== DEFAULT_SECTION_SETTINGS.backgroundColor ? settings.backgroundColor : undefined, backgroundImage: settings.backgroundImage ? `url(${settings.backgroundImage})` : undefined, backgroundSize: "cover", borderRadius: settings.borderRadius }}><ActualStorefrontSection type={section.type} data={section.data} />{selected && <div className="absolute right-2 top-2 z-30 flex items-center gap-1 rounded-lg border bg-white p-1 text-foreground shadow-lg"><Button size="sm" onClick={(event) => { event.stopPropagation(); onSelect(); }}>Edit</Button><Button variant="ghost" size="icon-sm" onClick={(event) => { event.stopPropagation(); onDuplicate(); }}><Copy className="size-3.5" /></Button><Button variant="ghost" size="icon-sm" onClick={(event) => { event.stopPropagation(); onToggle(); }}><EyeOff className="size-3.5" /></Button><Button variant="ghost" size="icon-sm" onClick={(event) => { event.stopPropagation(); onDelete(); }}><Trash2 className="size-3.5 text-destructive" /></Button></div>}</section>;
 }
 
-function ActualStorefrontSection({ type }: { type: HomepageSectionType }) {
+function ActualStorefrontSection({ type, data }: { type: HomepageSectionType; data?: HomepageSectionConfig["data"] }) {
   const components: Record<HomepageSectionType, React.ReactNode> = {
-    hero: <Hero />,
-    delivery_bar: <DeliveryBar />,
-    signature_dishes: <SignatureDishes />,
-    best_sellers: <BestSellers />,
-    offers: <OffersSection />,
-    why_choose_us: <WhyChooseUs />,
-    about_teaser: <AboutTeaser />,
-    reviews: <ReviewsSection />,
-    blog_teaser: <BlogTeaser />,
+    hero: <Hero data={data} />,
+    delivery_bar: <DeliveryBar data={data} />,
+    signature_dishes: <SignatureDishes data={data} />,
+    best_sellers: <BestSellers data={data} />,
+    offers: <OffersSection data={data} />,
+    why_choose_us: <WhyChooseUs data={data} />,
+    about_teaser: <AboutTeaser data={data} />,
+    reviews: <ReviewsSection data={data} />,
+    blog_teaser: <BlogTeaser data={data} />,
   };
   return components[type];
 }

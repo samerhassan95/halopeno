@@ -12,8 +12,11 @@ import { API_URL } from "@/lib/api/client";
 import { DEFAULT_HOMEPAGE_SECTIONS, type HomepageSectionConfig } from "@/lib/storefront/homepage-sections";
 import { getActiveTheme } from "@/lib/storefront/active-theme";
 import { ElectroHubHomepage } from "@/components/storefront/themes/electrohub";
+import type { SectionCmsData } from "@/lib/storefront/section-cms";
 
-const COMPONENT_MAP: Record<string, ComponentType> = {
+type SectionComponent = ComponentType<{ data?: SectionCmsData }>;
+
+const COMPONENT_MAP: Record<string, SectionComponent> = {
   hero: Hero,
   delivery_bar: DeliveryBar,
   signature_dishes: SignatureDishes,
@@ -47,7 +50,7 @@ export default async function StorefrontHomePage() {
     <>
       {ordered.map((s) => {
         const Component = COMPONENT_MAP[s.type];
-        return Component ? <Component key={s.id} /> : null;
+        return Component ? <Component key={s.id} data={s.data} /> : null;
       })}
     </>
   );

@@ -4,23 +4,28 @@ import { SectionHeading } from "../section-heading";
 import { FoodImage } from "../food-image";
 import { blogPosts } from "@/lib/storefront/data/blog";
 import { Reveal } from "../reveal";
+import { cmsNumber, cmsText, type SectionCmsData } from "@/lib/storefront/section-cms";
 
-export function BlogTeaser() {
+export function BlogTeaser({ data }: { data?: SectionCmsData } = {}) {
+  const title = cmsText(data, "title", "From the Halopeno Journal");
+  const viewAllText = cmsText(data, "viewAllText", "Visit the blog");
+  const articleCount = Math.max(1, cmsNumber(data, "articleCount", 3));
+
   return (
     <section className="mx-auto max-w-[1440px] px-4 py-16 sm:px-6 lg:px-10">
       <div className="flex flex-col items-center justify-between gap-4 sm:flex-row sm:items-end">
         <Reveal>
-          <SectionHeading title="From the Halopeno Journal" align="left" />
+          <SectionHeading title={title} align="left" />
         </Reveal>
         <Reveal delay={0.1}>
           <Link href="/blog" className="flex items-center gap-1 text-sm font-semibold text-primary hover:underline">
-            Visit the blog <ArrowUpRight className="size-4" />
+            {viewAllText} <ArrowUpRight className="size-4" />
           </Link>
         </Reveal>
       </div>
 
       <div className="mt-10 grid gap-6 sm:grid-cols-3">
-        {blogPosts.slice(0, 3).map((post, i) => (
+        {blogPosts.slice(0, articleCount).map((post, i) => (
           <Reveal key={post.id} delay={0.08 * i}>
             <Link href={`/blog/${post.slug}`} className="group block overflow-hidden rounded-[28px] bg-card shadow-soft">
               <div className="aspect-[16/10] overflow-hidden">

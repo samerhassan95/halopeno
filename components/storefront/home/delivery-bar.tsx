@@ -6,8 +6,11 @@ import { Button } from "../ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { cmsText, type SectionCmsData } from "@/lib/storefront/section-cms";
 
-export function DeliveryBar() {
+export function DeliveryBar({ data }: { data?: SectionCmsData } = {}) {
+  const message = cmsText(data, "message", "");
+  const secondaryMessage = cmsText(data, "secondaryMessage", "");
   const [mode, setMode] = React.useState<"delivery" | "pickup">("delivery");
   const [address, setAddress] = React.useState("");
   const [checked, setChecked] = React.useState(false);
@@ -15,12 +18,18 @@ export function DeliveryBar() {
   function handleCheck(e: React.FormEvent) {
     e.preventDefault();
     setChecked(true);
-    toast.success("Great news, we deliver to your area!");
+    toast.success(message || "Great news, we deliver to your area!");
   }
 
   return (
     <section className="relative z-10 mx-auto -mt-5 max-w-[1280px] px-4 sm:px-6 lg:px-10">
       <div className="rounded-[28px] border border-primary/10 bg-card/95 p-4 shadow-soft-lg backdrop-blur sm:p-6">
+        {(message || secondaryMessage) && (
+          <div className="mb-4 rounded-2xl bg-secondary/80 px-4 py-3 text-sm text-brown">
+            {message && <p className="font-semibold">{message}</p>}
+            {secondaryMessage && <p className="mt-1 text-muted-foreground">{secondaryMessage}</p>}
+          </div>
+        )}
         <div className="mb-4 inline-flex rounded-full bg-secondary p-1">
           {(["delivery", "pickup"] as const).map((m) => (
             <button
@@ -38,7 +47,9 @@ export function DeliveryBar() {
 
         <form onSubmit={handleCheck} className="flex flex-col gap-3 sm:flex-row">
           <div className="relative flex-1">
-            <label htmlFor="delivery-address" className="sr-only">Delivery address</label>
+            <label htmlFor="delivery-address" className="sr-only">
+              Delivery address
+            </label>
             <MapPin className="pointer-events-none absolute start-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               id="delivery-address"
