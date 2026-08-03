@@ -13,6 +13,7 @@ import { CategoryService } from './category.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
+import { Public } from '../../../common/decorators/public.decorator';
 
 @ApiTags('Commerce')
 @ApiBearerAuth()
@@ -20,12 +21,14 @@ import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 export class CategoryController {
   constructor(private readonly service: CategoryService) {}
 
+  @Public()
   @Get()
   @ApiOperation({ summary: 'List categories with pagination, search and sorting' })
   findAll(@Query() query: PaginationQueryDto) {
     return this.service.findAll(query);
   }
 
+  @Public()
   @Get(':id')
   @ApiOperation({ summary: 'Get a single category by id' })
   findOne(@Param('id') id: string) {

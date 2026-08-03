@@ -15,6 +15,21 @@ import { ProductBatchesManager } from "@/components/resource/product-batches-man
 import { OrdersManager } from "@/components/resource/orders-manager";
 import { InHouseOrdersManager } from "@/components/resource/in-house-orders-manager";
 import { SellerOrdersManager } from "@/components/resource/seller-orders-manager";
+import { RefundsManager } from "@/components/resource/refunds-manager";
+import { PreordersManager } from "@/components/resource/preorders-manager";
+import { AbandonedCartsManager } from "@/components/resource/abandoned-carts-manager";
+import { TransactionsManager } from "@/components/resource/transactions-manager";
+import { InvoicesManager } from "@/components/resource/invoices-manager";
+import { SellersManager } from "@/components/resource/sellers-manager";
+import { DeliveryAgentsManager } from "@/components/resource/delivery-agents-manager";
+import { SellerVerificationManager } from "@/components/resource/seller-verification-manager";
+import { PayoutRequestsManager } from "@/components/resource/payout-requests-manager";
+import { SellerSettlementsManager } from "@/components/resource/seller-settlements-manager";
+import { CustomerGroupsManager } from "@/components/resource/customer-groups-manager";
+import { ShippingZonesManager } from "@/components/resource/shipping-zones-manager";
+import { ShippingRatesManager } from "@/components/resource/shipping-rates-manager";
+import { CourierCompaniesManager } from "@/components/resource/courier-companies-manager";
+import { PickupPointsManager } from "@/components/resource/pickup-points-manager";
 import { findResourcePage } from "@/lib/resource-pages";
 
 function titleCase(slug: string) {
@@ -40,6 +55,21 @@ export default function PlaceholderPage({ params }: { params: Promise<{ slug: st
     if (config.route === "orders/all") return <OrdersManager />;
     if (config.route === "orders/in-house") return <InHouseOrdersManager />;
     if (config.route === "orders/seller") return <SellerOrdersManager />;
+    if (config.route === "refunds") return <RefundsManager />;
+    if (config.route === "preorders") return <PreordersManager />;
+    if (config.route === "abandoned-carts") return <AbandonedCartsManager />;
+    if (config.route === "transactions") return <TransactionsManager />;
+    if (config.route === "invoices") return <InvoicesManager />;
+    if (config.route === "sellers") return <SellersManager />;
+    if (config.route === "delivery-agents") return <DeliveryAgentsManager />;
+    if (config.route === "sellers/verification") return <SellerVerificationManager />;
+    if (config.route === "sellers/payouts") return <PayoutRequestsManager />;
+    if (config.route === "sellers/settlements") return <SellerSettlementsManager />;
+    if (config.route === "customer-groups") return <CustomerGroupsManager />;
+    if (config.route === "shipping/zones") return <ShippingZonesManager />;
+    if (config.route === "shipping/rates") return <ShippingRatesManager />;
+    if (config.route === "shipping/carriers") return <CourierCompaniesManager />;
+    if (config.route === "shipping/pickup-locations") return <PickupPointsManager />;
     return <ResourceListPage config={config} />;
   }
 

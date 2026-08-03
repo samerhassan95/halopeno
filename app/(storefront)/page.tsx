@@ -10,6 +10,8 @@ import { ReviewsSection } from "@/components/storefront/home/reviews-section";
 import { BlogTeaser } from "@/components/storefront/home/blog-teaser";
 import { API_URL } from "@/lib/api/client";
 import { DEFAULT_HOMEPAGE_SECTIONS, type HomepageSectionConfig } from "@/lib/storefront/homepage-sections";
+import { getActiveTheme } from "@/lib/storefront/active-theme";
+import { ElectroHubHomepage } from "@/components/storefront/themes/electrohub";
 
 const COMPONENT_MAP: Record<string, ComponentType> = {
   hero: Hero,
@@ -37,7 +39,8 @@ async function getHomepageSections(): Promise<HomepageSectionConfig[]> {
 }
 
 export default async function StorefrontHomePage() {
-  const sections = await getHomepageSections();
+  const [sections, activeTheme] = await Promise.all([getHomepageSections(), getActiveTheme()]);
+  if (activeTheme.id === "electrohub") return <ElectroHubHomepage />;
   const ordered = [...sections].filter((s) => s.visible).sort((a, b) => a.order - b.order);
 
   return (

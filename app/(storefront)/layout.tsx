@@ -7,6 +7,8 @@ import { CatalogLoader } from "@/components/storefront/catalog-loader";
 import { StorefrontI18nProvider } from "@/lib/storefront/i18n/context";
 import { API_URL } from "@/lib/api/client";
 import type { GlobalStylesConfig } from "@/lib/storefront/global-styles";
+import { getActiveTheme } from "@/lib/storefront/active-theme";
+import { ElectroHubFooter, ElectroHubHeader } from "@/components/storefront/themes/electrohub";
 
 export const metadata: Metadata = {
   title: "Halopeno | Small Jar. Big Kick.",
@@ -26,27 +28,30 @@ async function getGlobalStyleOverrides(): Promise<Partial<GlobalStylesConfig> | 
 }
 
 export default async function StorefrontLayout({ children }: { children: React.ReactNode }) {
-  const overrides = await getGlobalStyleOverrides();
+  const [overrides, activeTheme] = await Promise.all([getGlobalStyleOverrides(), getActiveTheme()]);
+  const isElectroHub = activeTheme.id === "electrohub";
 
   return (
     <div
       className="storefront-theme min-h-screen bg-background font-sans text-foreground antialiased"
+      data-active-theme={activeTheme.id}
     >
-      {overrides && (
+      {(overrides || isElectroHub) && (
         <style>{`
           .storefront-theme {
-            ${overrides.primary ? `--primary: ${overrides.primary};` : ""}
-            ${overrides.accent ? `--accent: ${overrides.accent}; --destructive: ${overrides.accent};` : ""}
-            ${overrides.background ? `--background: ${overrides.background};` : ""}
-            ${overrides.radius ? `--radius: ${overrides.radius};` : ""}
+            ${isElectroHub ? `--primary: #2563EB; --accent: #06B6D4; --background: #F5F7FB; --foreground: #111827; --radius: 0.75rem;` : ""}
+            ${overrides?.primary ? `--primary: ${overrides.primary};` : ""}
+            ${overrides?.accent ? `--accent: ${overrides.accent}; --destructive: ${overrides.accent};` : ""}
+            ${overrides?.background ? `--background: ${overrides.background};` : ""}
+            ${overrides?.radius ? `--radius: ${overrides.radius};` : ""}
           }
         `}</style>
       )}
       <StorefrontI18nProvider>
         <CatalogLoader />
-        <StorefrontHeader />
+        {isElectroHub ? <ElectroHubHeader /> : <StorefrontHeader />}
         <main className="pb-20 md:pb-0">{children}</main>
-        <StorefrontFooter />
+        {isElectroHub ? <ElectroHubFooter /> : <StorefrontFooter />}
         <CartDrawer />
         <MobileBottomNav />
       </StorefrontI18nProvider>

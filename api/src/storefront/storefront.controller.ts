@@ -27,4 +27,14 @@ export class StorefrontController {
     });
     return { value: row?.value ?? null };
   }
+
+  @Public()
+  @Get('active-theme')
+  @ApiOperation({ summary: 'Public active storefront theme identifier and deployment metadata' })
+  async getActiveTheme() {
+    const row = await this.prisma.setting.findUnique({
+      where: { group_key: { group: 'storefront', key: 'active_theme' } },
+    });
+    return { value: row?.value ?? { id: 'classic' } };
+  }
 }

@@ -9,7 +9,7 @@ export interface ResourceColumn {
 export interface ResourceField {
   key: string;
   label: string;
-  type: "text" | "number" | "textarea" | "select" | "checkbox";
+  type: "text" | "number" | "textarea" | "select" | "checkbox" | "image" | "video";
   options?: string[];
   required?: boolean;
 }
@@ -570,7 +570,7 @@ export const resourcePages: ResourcePageConfig[] = [
     ],
     createFields: [
       { key: "title", label: "Title", type: "text", required: true },
-      { key: "image", label: "Image URL", type: "text", required: true },
+      { key: "image", label: "Banner image", type: "image", required: true },
       { key: "link", label: "Link", type: "text" },
       { key: "placement", label: "Placement", type: "text" },
     ],

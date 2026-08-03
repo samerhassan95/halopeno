@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { ResourceField } from "@/lib/resource-pages";
+import { MediaUploadField } from "@/components/ui/media-upload-field";
 
 interface ResourceFormDialogProps {
   open: boolean;
@@ -44,7 +45,9 @@ export function ResourceFormDialog({
   const [values, setValues] = React.useState<Record<string, unknown>>({});
 
   React.useEffect(() => {
-    if (open) setValues(initialValues ?? {});
+    if (!open) return;
+    const task = window.setTimeout(() => setValues(initialValues ?? {}), 0);
+    return () => window.clearTimeout(task);
   }, [open, initialValues]);
 
   function setField(key: string, value: unknown) {
@@ -67,12 +70,20 @@ export function ResourceFormDialog({
         <form onSubmit={handleSubmit} className="grid max-h-[60vh] gap-4 overflow-y-auto scrollbar-thin px-0.5 py-1">
           {fields.map((field) => (
             <div key={field.key} className="space-y-1.5">
-              <Label htmlFor={field.key}>
+              {field.type !== "image" && field.type !== "video" && <Label htmlFor={field.key}>
                 {field.label}
                 {field.required && <span className="text-destructive">*</span>}
-              </Label>
+              </Label>}
 
-              {field.type === "textarea" ? (
+              {field.type === "image" || field.type === "video" ? (
+                <MediaUploadField
+                  label={field.label}
+                  kind={field.type}
+                  value={(values[field.key] as string) ?? ""}
+                  onChange={(url) => setField(field.key, url)}
+                  required={field.required}
+                />
+              ) : field.type === "textarea" ? (
                 <textarea
                   id={field.key}
                   required={field.required}

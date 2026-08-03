@@ -253,11 +253,6 @@ export const navSections: NavSection[] = [
       leaf("Footer Builder", "منشئ التذييل", "/admin/design-studio/footer", PanelBottom),
       leaf("Homepage Builder", "منشئ الصفحة الرئيسية", "/admin/homepage-builder", Home),
       leaf("Banner Management", "إدارة البانرات", "/admin/banners", ImageIcon),
-      leaf("AI Studio", "استوديو الذكاء الاصطناعي", "/admin/ai-studio", Sparkles),
-      leaf("AI Content Generator", "مولد المحتوى بالذكاء الاصطناعي", "/admin/ai-studio/content-generator", Wand2),
-      leaf("AI Generation History", "سجل توليد الذكاء الاصطناعي", "/admin/ai-studio/history", History),
-      leaf("AI Templates", "قوالب الذكاء الاصطناعي", "/admin/ai-studio/templates", FileSliders),
-      leaf("AI Settings", "إعدادات الذكاء الاصطناعي", "/admin/ai-studio/settings", Cog),
       leaf("Uploaded Files", "الملفات المرفوعة", "/admin/files", UploadCloud),
       leaf("Media Library", "مكتبة الوسائط", "/admin/media-library", Images),
       leaf("Pages", "الصفحات", "/admin/pages", FileStack),
@@ -265,6 +260,16 @@ export const navSections: NavSection[] = [
       leaf("Blog Categories", "تصنيفات المدونة", "/admin/content/blog-categories", ListTree),
       leaf("Menus", "القوائم", "/admin/content/menus", ListTree),
       leaf("Popups", "النوافذ المنبثقة", "/admin/content/popups", LayoutTemplate),
+    ],
+  },
+  {
+    label: { en: "AI", ar: "الذكاء الاصطناعي" },
+    items: [
+      leaf("AI Studio", "استوديو الذكاء الاصطناعي", "/admin/ai-studio", Sparkles),
+      leaf("AI Content Generator", "مولد المحتوى بالذكاء الاصطناعي", "/admin/ai-studio/content-generator", Wand2),
+      leaf("AI Generation History", "سجل توليد الذكاء الاصطناعي", "/admin/ai-studio/history", History),
+      leaf("AI Templates", "قوالب الذكاء الاصطناعي", "/admin/ai-studio/templates", FileSliders),
+      leaf("AI Settings", "إعدادات الذكاء الاصطناعي", "/admin/ai-studio/settings", Cog),
     ],
   },
   {

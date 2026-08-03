@@ -50,10 +50,11 @@ async function refreshAccessToken(): Promise<string | null> {
 
 export async function apiFetch<T>(path: string, options: RequestInit = {}, retry = true): Promise<T> {
   const token = getAccessToken();
+  const isFormData = options.body instanceof FormData;
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
     headers: {
-      "Content-Type": "application/json",
+      ...(!isFormData ? { "Content-Type": "application/json" } : {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     },
@@ -87,4 +88,9 @@ export const api = {
   patch: <T>(path: string, body?: unknown) =>
     apiFetch<T>(path, { method: "PATCH", body: body ? JSON.stringify(body) : undefined }),
   delete: <T>(path: string) => apiFetch<T>(path, { method: "DELETE" }),
+  upload: <T>(path: string, file: File) => {
+    const body = new FormData();
+    body.append("file", file);
+    return apiFetch<T>(path, { method: "POST", body });
+  },
 };

@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { api, ApiError } from "@/lib/api/client";
+import { MediaUploadField } from "@/components/ui/media-upload-field";
 
 const PRODUCT_STATUSES = [
   "DRAFT",
@@ -483,12 +484,14 @@ export function ProductForm({
               ))}
             </div>
           )}
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <Input placeholder="Image URL" value={newImageUrl} onChange={(e) => setNewImageUrl(e.target.value)} disabled={!isEdit} />
+          <div className="space-y-2">
+            <MediaUploadField label="Product image" value={newImageUrl} onChange={setNewImageUrl} />
+            <div className="flex flex-col gap-2 sm:flex-row">
             <Input placeholder="Alt text" value={newImageAlt} onChange={(e) => setNewImageAlt(e.target.value)} disabled={!isEdit} className="sm:max-w-[220px]" />
             <Button type="button" variant="outline" className="shrink-0 gap-1.5" onClick={addImage} disabled={!isEdit || imageBusy || !newImageUrl.trim()}>
               <Plus className="size-4" /> Add image
             </Button>
+            </div>
           </div>
         </div>
       </Card>

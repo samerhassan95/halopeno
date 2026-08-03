@@ -1,18 +1,1381 @@
 "use client";
-import * as React from "react";import { useRouter } from "next/navigation";import { Archive,Box,CalendarClock,ChevronLeft,CircleDollarSign,Eye,FileCheck2,Gavel,ImagePlus,Link2,PackageCheck,Save,SearchCheck,ShieldCheck,Truck,Users } from "lucide-react";import { toast } from "sonner";import { api,ApiError } from "@/lib/api/client";import { Badge } from "@/components/ui/badge";import { Button } from "@/components/ui/button";import { Card,CardDescription,CardHeader,CardTitle } from "@/components/ui/card";import { Input } from "@/components/ui/input";import { Label } from "@/components/ui/label";import { Select,SelectContent,SelectItem,SelectTrigger,SelectValue } from "@/components/ui/select";import { Switch } from "@/components/ui/switch";import { Tabs,TabsContent,TabsList,TabsTrigger } from "@/components/ui/tabs";import { Textarea } from "@/components/ui/textarea";import { cn } from "@/lib/utils";import { loadAuctionConfig,saveAuctionConfig } from "@/lib/auction/config-store";import { AUCTION_STATUSES,AUCTION_TYPES,defaultAuctionConfig,type AuctionAdminConfig,type AuctionDetailRow } from "./types";
-interface Option{id:string;name:string} interface InitialProduct{id:string;name:string;slug:string;sku:string;status:string;shortDescription?:string|null;description?:string|null;categoryId?:string|null;brandId?:string|null;regularPrice:string;stock:number;metaTitle?:string|null;metaDescription?:string|null;images?:{id:string;url:string}[];auctionDetail?:AuctionDetailRow|null}
-const number=(value:string|number|null|undefined)=>Number(value||0),slugify=(value:string)=>value.toLowerCase().trim().replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"");const localDate=(value?:string)=>value?new Date(value).toISOString().slice(0,16):"";
-function Section({title,description,icon:Icon,children}:{title:string;description:string;icon:React.ElementType;children:React.ReactNode}){return <Card className="overflow-hidden border-border/70 shadow-sm"><CardHeader className="border-b bg-secondary/20"><div className="flex gap-3"><span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-warning/10 text-warning"><Icon className="size-4.5"/></span><div><CardTitle>{title}</CardTitle><CardDescription>{description}</CardDescription></div></div></CardHeader><div className="p-5">{children}</div></Card>}
-function Field({label,hint,required,children,className}:{label:string;hint?:string;required?:boolean;children:React.ReactNode;className?:string}){return <div className={cn("space-y-1.5",className)}><Label>{label}{required&&<span className="text-destructive"> *</span>}</Label>{children}{hint&&<p className="text-[11px] text-muted-foreground">{hint}</p>}</div>}
-const Toggle=({label,checked,onChange}:{label:string;checked:boolean;onChange:(checked:boolean)=>void})=><div className="flex items-center justify-between rounded-xl border p-3"><Label>{label}</Label><Switch checked={checked} onCheckedChange={onChange}/></div>;
-export function AuctionProductForm({initialProduct}:{initialProduct?:InitialProduct}){const router=useRouter(),isEdit=Boolean(initialProduct);const[saving,setSaving]=React.useState(false),[tab,setTab]=React.useState("overview"),[categories,setCategories]=React.useState<Option[]>([]),[brands,setBrands]=React.useState<Option[]>([]),[collections,setCollections]=React.useState<Option[]>([]);const[name,setName]=React.useState(initialProduct?.name??""),[slug,setSlug]=React.useState(initialProduct?.slug??""),[slugTouched,setSlugTouched]=React.useState(isEdit),[sku,setSku]=React.useState(initialProduct?.sku??""),[status,setStatus]=React.useState(initialProduct?.auctionDetail?.status??"draft"),[productStatus,setProductStatus]=React.useState(initialProduct?.status??"DRAFT"),[shortDescription,setShortDescription]=React.useState(initialProduct?.shortDescription??""),[description,setDescription]=React.useState(initialProduct?.description??""),[categoryId,setCategoryId]=React.useState(initialProduct?.categoryId??""),[brandId,setBrandId]=React.useState(initialProduct?.brandId??""),[startingBid,setStartingBid]=React.useState(initialProduct?.auctionDetail?.startingBid??""),[reservePrice,setReservePrice]=React.useState(initialProduct?.auctionDetail?.reservePrice??""),[minIncrement,setMinIncrement]=React.useState(initialProduct?.auctionDetail?.minIncrement??"1"),[startAt,setStartAt]=React.useState(localDate(initialProduct?.auctionDetail?.startAt)),[endAt,setEndAt]=React.useState(localDate(initialProduct?.auctionDetail?.endAt)),[metaTitle,setMetaTitle]=React.useState(initialProduct?.metaTitle??""),[metaDescription,setMetaDescription]=React.useState(initialProduct?.metaDescription??"");const[config,setConfig]=React.useState<AuctionAdminConfig>(()=>initialProduct?loadAuctionConfig(initialProduct.id):{...defaultAuctionConfig,auctionId:`AUC-${new Date().getFullYear()}-${Math.random().toString().slice(2,8)}`});
- React.useEffect(()=>{Promise.all([api.get<{data:Option[]}>("/commerce/categories?limit=100"),api.get<{data:Option[]}>("/commerce/brands?limit=100"),api.get<{data:Option[]}>("/commerce/collections?limit=100")]).then(([c,b,l])=>{setCategories(c.data);setBrands(b.data);setCollections(l.data);}).catch(()=>{});},[]);function setC<K extends keyof AuctionAdminConfig>(key:K,value:AuctionAdminConfig[K]){setConfig((current)=>({...current,[key]:value}));}function toggleArray(key:"shippingMethods"|"paymentMethods",value:string){setC(key,config[key].includes(value)?config[key].filter((item)=>item!==value):[...config[key],value]);}
- async function save(nextStatus?:string){if(!name.trim()||!sku.trim()||!slug.trim()||!startingBid||!startAt||!endAt){toast.error("Name, SKU, slug, starting price, and auction dates are required");return;}setSaving(true);const resolvedStatus=nextStatus??status;try{let productId=initialProduct?.id;const productPayload={name:name.trim(),slug:slug.trim(),sku:sku.trim(),type:"AUCTION",status:productStatus,shortDescription:shortDescription||undefined,description:description||undefined,categoryId:categoryId||undefined,brandId:brandId||undefined,regularPrice:number(config.estimatedValue||startingBid),stock:config.availableQuantity,metaTitle:metaTitle||undefined,metaDescription:metaDescription||undefined};if(productId)await api.patch(`/commerce/products/${productId}`,productPayload);else productId=(await api.post<{id:string}>("/commerce/products",productPayload)).id;const auctionPayload={productId,startingBid:number(startingBid),reservePrice:config.enableReserve&&reservePrice?number(reservePrice):undefined,minIncrement:number(minIncrement),startAt:new Date(startAt).toISOString(),endAt:new Date(endAt).toISOString(),autoBidEnabled:config.allowAutoBidding,status:resolvedStatus};if(initialProduct?.auctionDetail?.id)await api.patch(`/commerce/auction-details/${initialProduct.auctionDetail.id}`,auctionPayload);else await api.post("/commerce/auction-details",auctionPayload);saveAuctionConfig(productId,config);if(!initialProduct?.images?.length&&config.mainImage)await api.post("/commerce/product-images",{productId,url:config.mainImage,altText:name,displayOrder:0}).catch(()=>null);setStatus(resolvedStatus);toast.success(isEdit?"Auction updated":"Auction created");if(!isEdit)router.push(`/admin/products/auction/${productId}`);else router.refresh();}catch(error){toast.error(error instanceof ApiError?error.message:"Unable to save auction");}finally{setSaving(false);}}
- const tabs=[{value:"overview",label:"Product"},{value:"pricing",label:"Pricing & Type"},{value:"schedule",label:"Schedule & Rules"},{value:"eligibility",label:"Eligibility & Quantity"},{value:"fulfillment",label:"Shipping & Payment"},{value:"winner",label:"Winner & Visibility"},{value:"media",label:"Media & SEO"}];return <div className="mx-auto max-w-[1500px] pb-28"><div className="sticky top-0 z-30 mb-5 border-b bg-background/90 px-1 py-3 backdrop-blur-xl"><div className="flex items-center justify-between gap-3"><div className="flex min-w-0 items-center gap-3"><Button variant="ghost" size="icon" onClick={()=>router.push("/admin/products/auction")}><ChevronLeft className="size-4"/></Button><div className="min-w-0"><div className="flex items-center gap-2"><h1 className="truncate font-display text-xl font-bold sm:text-2xl">{isEdit?`Edit ${name}`:"Add Auction Product"}</h1><Badge variant={status==="live"?"success":status==="paused"?"warning":"secondary"}>{status}</Badge></div><p className="hidden text-xs text-muted-foreground sm:block">Configure auction rules, schedule, bidding, payments, and fulfillment.</p></div></div><div className="flex gap-2"><Button variant="outline" className="hidden sm:inline-flex" onClick={()=>save("draft")} disabled={saving}><Archive className="size-4"/>Save draft</Button><Button onClick={()=>save()} disabled={saving}><Save className="size-4"/>{saving?"Saving…":"Save auction"}</Button></div></div></div><Tabs value={tab} onValueChange={setTab} className="min-w-0 space-y-5"><div className="w-full max-w-[calc(100vw-2rem)] overflow-x-auto pb-1 lg:max-w-none"><TabsList className="min-w-max">{tabs.map((item)=><TabsTrigger key={item.value} value={item.value}>{item.label}</TabsTrigger>)}</TabsList></div>
- <TabsContent value="overview" className="space-y-5"><Section title="Basic Product Information" description="Identify the item, seller, condition, and catalog placement." icon={Box}><div className="grid gap-4 md:grid-cols-2"><Field label="Product name" required><Input value={name} onChange={(event)=>{setName(event.target.value);if(!slugTouched)setSlug(slugify(event.target.value));}} placeholder="Limited Edition Chronograph"/></Field><Field label="Auction ID"><Input value={config.auctionId} onChange={(event)=>setC("auctionId",event.target.value)}/></Field><Field label="SKU" required><Input value={sku} onChange={(event)=>setSku(event.target.value)}/></Field><Field label="Condition"><Select value={config.condition} onValueChange={(value)=>setC("condition",value)}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent>{["New","Like New","Used","Refurbished","Vintage","Damaged","Other"].map((item)=><SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></Field><Field label="Category"><Select value={categoryId||"none"} onValueChange={(value)=>setCategoryId(value==="none"?"":value)}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="none">No category</SelectItem>{categories.map((item)=><SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}</SelectContent></Select></Field><Field label="Subcategory"><Input value={config.subcategory} onChange={(event)=>setC("subcategory",event.target.value)}/></Field><Field label="Brand"><Select value={brandId||"none"} onValueChange={(value)=>setBrandId(value==="none"?"":value)}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="none">No brand</SelectItem>{brands.map((item)=><SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}</SelectContent></Select></Field><Field label="Collection"><Select value={config.collection||"none"} onValueChange={(value)=>setC("collection",value==="none"?"":value)}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="none">No collection</SelectItem>{collections.map((item)=><SelectItem key={item.id} value={item.name}>{item.name}</SelectItem>)}</SelectContent></Select></Field><Field label="Seller"><Input value={config.seller} onChange={(event)=>setC("seller",event.target.value)}/></Field><Field label="Warehouse / location"><Input value={config.location} onChange={(event)=>setC("location",event.target.value)}/></Field><Field label="Tags" className="md:col-span-2"><Input value={config.tags} onChange={(event)=>setC("tags",event.target.value)} placeholder="luxury, collectible, limited-edition"/></Field><Field label="Short description" className="md:col-span-2"><Textarea rows={2} value={shortDescription} onChange={(event)=>setShortDescription(event.target.value)}/></Field><Field label="Full description" className="md:col-span-2"><Textarea rows={7} value={description} onChange={(event)=>setDescription(event.target.value)}/></Field></div></Section></TabsContent>
- <TabsContent value="pricing" className="space-y-5"><Section title="Auction Type" description="Choose the bidding mechanism and commercial format." icon={Gavel}><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"><Field label="Auction type"><Select value={config.auctionType} onValueChange={(value)=>setC("auctionType",value)}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent>{AUCTION_TYPES.map((item)=><SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></Field><Field label="Auction status"><Select value={status} onValueChange={setStatus}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent>{AUCTION_STATUSES.map((item)=><SelectItem key={item} value={item}>{item.replaceAll("-"," ")}</SelectItem>)}</SelectContent></Select></Field><Field label="Product status"><Select value={productStatus} onValueChange={setProductStatus}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent>{["DRAFT","PUBLISHED","DISABLED","ARCHIVED","PENDING_REVIEW","OUT_OF_STOCK"].map((item)=><SelectItem key={item} value={item}>{item.replaceAll("_"," ")}</SelectItem>)}</SelectContent></Select></Field></div></Section><Section title="Auction Pricing" description="Configure entry price, increments, reserve, premiums, and commissions." icon={CircleDollarSign}><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"><Field label="Starting price" required><Input type="number" min="0" value={startingBid} onChange={(event)=>setStartingBid(event.target.value)}/></Field><Field label="Minimum increment"><Input type="number" min="0" value={minIncrement} onChange={(event)=>setMinIncrement(event.target.value)}/></Field><Field label="Maximum increment"><Input type="number" value={config.maxIncrement??""} placeholder="Unlimited" onChange={(event)=>setC("maxIncrement",event.target.value?number(event.target.value):null)}/></Field><Field label="Reserve price"><Input type="number" value={reservePrice} onChange={(event)=>setReservePrice(event.target.value)}/></Field><Field label="Buy now price"><Input type="number" value={config.buyNowPrice??""} onChange={(event)=>setC("buyNowPrice",event.target.value?number(event.target.value):null)}/></Field><Field label="Estimated value"><Input type="number" value={config.estimatedValue} onChange={(event)=>setC("estimatedValue",number(event.target.value))}/></Field><Field label="Deposit amount"><Input type="number" value={config.depositAmount} onChange={(event)=>setC("depositAmount",number(event.target.value))}/></Field><Field label="Buyer premium %"><Input type="number" value={config.buyerPremium} onChange={(event)=>setC("buyerPremium",number(event.target.value))}/></Field><Field label="Seller commission %"><Input type="number" value={config.sellerCommission} onChange={(event)=>setC("sellerCommission",number(event.target.value))}/></Field><Field label="Tax class"><Input value={config.taxClass} onChange={(event)=>setC("taxClass",event.target.value)}/></Field><Field label="Currency"><Select value={config.currency} onValueChange={(value)=>setC("currency",value)}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent>{["USD","EUR","GBP","AED","SAR","EGP"].map((item)=><SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></Field>{[["Reserve price","enableReserve"],["Buy now","enableBuyNow"],["Hide reserve","hideReserve"],["Automatic bidding","allowAutoBidding"],["Bid deposit","requireDeposit"],["Buyer premium","enableBuyerPremium"]].map(([label,key])=><Toggle key={key} label={`Enable ${label}`} checked={Boolean(config[key as "enableReserve"])} onChange={(checked)=>setC(key as "enableReserve",checked)}/>)}</div></Section></TabsContent>
- <TabsContent value="schedule" className="space-y-5"><Section title="Auction Schedule" description="Plan previews, registration, opening, closing, and anti-sniping extensions." icon={CalendarClock}><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"><Field label="Start date & time" required><Input type="datetime-local" value={startAt} onChange={(event)=>setStartAt(event.target.value)}/></Field><Field label="End date & time" required><Input type="datetime-local" value={endAt} onChange={(event)=>setEndAt(event.target.value)}/></Field><Field label="Timezone"><Input value={config.timezone} onChange={(event)=>setC("timezone",event.target.value)}/></Field><Field label="Preview start"><Input type="datetime-local" value={config.previewStart} onChange={(event)=>setC("previewStart",event.target.value)}/></Field><Field label="Registration deadline"><Input type="datetime-local" value={config.registrationDeadline} onChange={(event)=>setC("registrationDeadline",event.target.value)}/></Field><Field label="Extension trigger (minutes)"><Input type="number" value={config.extensionTriggerMinutes} onChange={(event)=>setC("extensionTriggerMinutes",number(event.target.value))}/></Field><Field label="Extension duration (minutes)"><Input type="number" value={config.extensionDurationMinutes} onChange={(event)=>setC("extensionDurationMinutes",number(event.target.value))}/></Field><Field label="Maximum extensions"><Input type="number" value={config.maxExtensions} onChange={(event)=>setC("maxExtensions",number(event.target.value))}/></Field>{[["Start immediately","startImmediately"],["Auto extend auction","autoExtend"],["Close automatically","autoClose"]].map(([label,key])=><Toggle key={key} label={label} checked={Boolean(config[key as "startImmediately"])} onChange={(checked)=>setC(key as "startImmediately",checked)}/>)}</div></Section><Section title="Bid Rules" description="Control bid limits, approvals, anonymity, withdrawal, and fraud safeguards." icon={ShieldCheck}><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"><Field label="Maximum bid amount"><Input type="number" value={config.maxBidAmount??""} placeholder="Unlimited" onChange={(event)=>setC("maxBidAmount",event.target.value?number(event.target.value):null)}/></Field><Field label="Max bids per customer"><Input type="number" value={config.maxBidsPerCustomer??""} placeholder="Unlimited" onChange={(event)=>setC("maxBidsPerCustomer",event.target.value?number(event.target.value):null)}/></Field><Field label="Withdrawal deadline"><Input type="datetime-local" value={config.withdrawalDeadline} onChange={(event)=>setC("withdrawalDeadline",event.target.value)}/></Field><Field label="Restricted countries"><Input value={config.countries} onChange={(event)=>setC("countries",event.target.value)} placeholder="Comma-separated ISO codes"/></Field>{[["Bid approval required","bidApproval"],["Anonymous bidding","anonymousBidding"],["Hide bidder identity","hideBidderIdentity"],["Allow bid withdrawal","allowWithdrawal"],["Block seller bidding","blockSeller"],["Block duplicate accounts","blockDuplicates"]].map(([label,key])=><Toggle key={key} label={label} checked={Boolean(config[key as "bidApproval"])} onChange={(checked)=>setC(key as "bidApproval",checked)}/>)}</div></Section></TabsContent>
- <TabsContent value="eligibility" className="space-y-5"><Section title="Bidder Eligibility" description="Choose who can participate and required verification levels." icon={Users}><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"><Field label="Eligibility"><Select value={config.eligibility} onValueChange={(value)=>setC("eligibility",value)}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent>{["Public Auction","Registered Customers Only","Verified Customers Only","Approved Bidders Only","Customer Groups Only","Invitation Only"].map((item)=><SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></Field>{[["Email verification","emailVerification"],["Phone verification","phoneVerification"],["Identity verification","identityVerification"],["Business verification","businessVerification"],["Payment verification","paymentVerification"],["Deposit verification","depositVerification"]].map(([label,key])=><Toggle key={key} label={label} checked={Boolean(config[key as "emailVerification"])} onChange={(checked)=>setC(key as "emailVerification",checked)}/>)}</div></Section><Section title="Product Quantity" description="Support single items, lots, bundles, quantities, and multiple winners." icon={PackageCheck}><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"><Field label="Quantity format"><Select value={config.quantityType} onValueChange={(value)=>setC("quantityType",value)}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent>{["Single Item Auction","Multiple Quantity Auction","Multi-Winner Auction","Lot Auction","Bundle Auction"].map((item)=><SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></Field><Field label="Available quantity"><Input type="number" value={config.availableQuantity} onChange={(event)=>setC("availableQuantity",number(event.target.value))}/></Field><Field label="Units per lot"><Input type="number" value={config.unitsPerLot} onChange={(event)=>setC("unitsPerLot",number(event.target.value))}/></Field><Field label="Number of lots"><Input type="number" value={config.numberOfLots} onChange={(event)=>setC("numberOfLots",number(event.target.value))}/></Field><Field label="Max lots per bidder"><Input type="number" value={config.maxLotsPerBidder} onChange={(event)=>setC("maxLotsPerBidder",number(event.target.value))}/></Field></div></Section></TabsContent>
- <TabsContent value="fulfillment" className="space-y-5"><Section title="Shipping & Fulfillment" description="Configure physical, freight, pickup, international, and digital delivery." icon={Truck}><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"><div className="grid gap-2 sm:col-span-2 lg:col-span-4">{["Shipping Available","Local Pickup","Digital Delivery","Freight Shipping","International Shipping","Seller-Arranged Shipping","Buyer-Arranged Shipping"].map((method)=><Toggle key={method} label={method} checked={config.shippingMethods.includes(method)} onChange={()=>toggleArray("shippingMethods",method)}/>)}</div>{["weight","length","width","height"].map((key)=><Field key={key} label={`Shipping ${key}`}><Input value={String(config[key as "weight"])} onChange={(event)=>setC(key as "weight",event.target.value)}/></Field>)}<Field label="Shipping class"><Input value={config.shippingClass} onChange={(event)=>setC("shippingClass",event.target.value)}/></Field><Field label="Pickup location"><Input value={config.pickupLocation} onChange={(event)=>setC("pickupLocation",event.target.value)}/></Field><Field label="Shipping cost"><Input type="number" value={config.shippingCost} onChange={(event)=>setC("shippingCost",number(event.target.value))}/></Field><Field label="Handling fee"><Input type="number" value={config.handlingFee} onChange={(event)=>setC("handlingFee",number(event.target.value))}/></Field><Field label="Estimated delivery"><Input value={config.deliveryTime} onChange={(event)=>setC("deliveryTime",event.target.value)}/></Field></div></Section><Section title="Payment Settings" description="Control methods, deposits, deadlines, penalties, escrow, and approval." icon={CircleDollarSign}><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"><div className="grid gap-2 sm:col-span-2 lg:col-span-4">{["Credit Card","Bank Transfer","Digital Wallet","Cash on Pickup","Escrow","Custom Payment Method"].map((method)=><Toggle key={method} label={method} checked={config.paymentMethods.includes(method)} onChange={()=>toggleArray("paymentMethods",method)}/>)}</div><Field label="Payment deadline (days)"><Input type="number" value={config.paymentDeadlineDays} onChange={(event)=>setC("paymentDeadlineDays",number(event.target.value))}/></Field><Field label="Late penalty %"><Input type="number" value={config.latePenalty} onChange={(event)=>setC("latePenalty",number(event.target.value))}/></Field>{[["Full payment required","fullPayment"],["Partial payment allowed","partialPayment"],["Deposit deduction","depositDeduction"],["Auto-charge winner","autoCharge"],["Escrow payment","escrow"],["Manual approval","manualPaymentApproval"]].map(([label,key])=><Toggle key={key} label={label} checked={Boolean(config[key as "fullPayment"])} onChange={(checked)=>setC(key as "fullPayment",checked)}/>)}</div></Section></TabsContent>
- <TabsContent value="winner" className="space-y-5"><Section title="Winner Rules" description="Define selection, reserve, approvals, backup offers, and payment deadlines." icon={Gavel}><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"><Field label="Winner payment deadline"><Input type="number" value={config.winnerDeadlineDays} onChange={(event)=>setC("winnerDeadlineDays",number(event.target.value))}/></Field><Field label="Notification template"><Input value={config.notificationTemplate} onChange={(event)=>setC("notificationTemplate",event.target.value)}/></Field>{[["Highest bidder wins","highestBidWins"],["Reserve must be met","reserveMustBeMet"],["Admin approval","adminApproval"],["Seller approval","sellerApproval"],["Multiple winners","multipleWinners"],["Automatic selection","autoWinner"],["Backup winner","backupWinner"],["Offer second-highest","offerSecondHighest"]].map(([label,key])=><Toggle key={key} label={label} checked={Boolean(config[key as "highestBidWins"])} onChange={(checked)=>setC(key as "highestBidWins",checked)}/>) }<Field label="Cancellation policy" className="sm:col-span-2 lg:col-span-4"><Textarea rows={3} value={config.cancellationPolicy} onChange={(event)=>setC("cancellationPolicy",event.target.value)}/></Field></div></Section><Section title="Auction Visibility" description="Control audience, storefront discovery, and public auction metrics." icon={Eye}><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"><Field label="Visibility"><Select value={config.visibility} onValueChange={(value)=>setC("visibility",value)}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent>{["Public","Registered Users Only","Verified Bidders Only","Customer Groups Only","Private","Invitation Only","Hidden"].map((item)=><SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></Field>{[["Featured auction","featured"],["Homepage visibility","homepage"],["Show in search","showSearch"],["Show bid count","showBidCount"],["Show bid history","showHistory"],["Show watcher count","showWatchers"],["Show current price","showPrice"],["Highlighted auction","highlighted"],["Verified auction","verified"],["Premium listing","premium"]].map(([label,key])=><Toggle key={key} label={label} checked={Boolean(config[key as "featured"])} onChange={(checked)=>setC(key as "featured",checked)}/>)}</div></Section></TabsContent>
- <TabsContent value="media" className="space-y-5"><Section title="Product Media & Documents" description="Add gallery, video, 360° views, certificates, authenticity, and inspection records." icon={ImagePlus}><div className="grid gap-4 sm:grid-cols-2"><Field label="Main product image"><Input value={config.mainImage} onChange={(event)=>setC("mainImage",event.target.value)}/></Field><Field label="Product video"><Input value={config.video} onChange={(event)=>setC("video",event.target.value)}/></Field>{[{key:"gallery",label:"Gallery"},{key:"images360",label:"360-degree images"},{key:"documents",label:"Product documents"},{key:"certificates",label:"Certificates"},{key:"authenticityDocs",label:"Authenticity documents"},{key:"inspectionReport",label:"Inspection report"}].map((item)=><Field key={item.key} label={item.label}><Textarea rows={3} value={String(config[item.key as "gallery"])} onChange={(event)=>setC(item.key as "gallery",event.target.value)} placeholder="One URL per line"/></Field>)}</div></Section><Section title="SEO & Auction Schema" description="Optimize auction discovery with canonical metadata and structured markup." icon={SearchCheck}><div className="grid gap-4 sm:grid-cols-2"><Field label="URL slug" required><div className="relative"><Link2 className="absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"/><Input className="ps-9" value={slug} onChange={(event)=>{setSlugTouched(true);setSlug(event.target.value);}}/></div></Field><Field label="Canonical URL"><Input value={config.canonicalUrl} onChange={(event)=>setC("canonicalUrl",event.target.value)}/></Field><Field label="Meta title" className="sm:col-span-2"><Input maxLength={60} value={metaTitle} onChange={(event)=>setMetaTitle(event.target.value)}/></Field><Field label="Meta description" className="sm:col-span-2"><Textarea maxLength={160} rows={3} value={metaDescription} onChange={(event)=>setMetaDescription(event.target.value)}/></Field><Field label="Open Graph image"><Input value={config.openGraphImage} onChange={(event)=>setC("openGraphImage",event.target.value)}/></Field><Field label="Structured data"><Input value={config.structuredData} onChange={(event)=>setC("structuredData",event.target.value)}/></Field><Toggle label="Auction schema markup" checked={config.schemaMarkup} onChange={(checked)=>setC("schemaMarkup",checked)}/></div></Section></TabsContent></Tabs><Button size="lg" className="fixed bottom-6 end-6 z-40 rounded-full shadow-soft-lg sm:hidden" onClick={()=>save()} disabled={saving}><Save className="size-4"/>Save</Button></div>}
+import {
+  MediaUploadField,
+  MediaUploadListField,
+} from "@/components/ui/media-upload-field";
+import * as React from "react";
+import { useRouter } from "next/navigation";
+import {
+  Archive,
+  Box,
+  CalendarClock,
+  ChevronLeft,
+  CircleDollarSign,
+  Eye,
+  FileCheck2,
+  Gavel,
+  ImagePlus,
+  Link2,
+  PackageCheck,
+  Save,
+  SearchCheck,
+  ShieldCheck,
+  Truck,
+  Users,
+} from "lucide-react";
+import { toast } from "sonner";
+import { api, ApiError } from "@/lib/api/client";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
+import {
+  loadAuctionConfig,
+  saveAuctionConfig,
+} from "@/lib/auction/config-store";
+import {
+  AUCTION_STATUSES,
+  AUCTION_TYPES,
+  defaultAuctionConfig,
+  type AuctionAdminConfig,
+  type AuctionDetailRow,
+} from "./types";
+interface Option {
+  id: string;
+  name: string;
+}
+interface InitialProduct {
+  id: string;
+  name: string;
+  slug: string;
+  sku: string;
+  status: string;
+  shortDescription?: string | null;
+  description?: string | null;
+  categoryId?: string | null;
+  brandId?: string | null;
+  regularPrice: string;
+  stock: number;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  images?: { id: string; url: string }[];
+  auctionDetail?: AuctionDetailRow | null;
+}
+const number = (value: string | number | null | undefined) =>
+    Number(value || 0),
+  slugify = (value: string) =>
+    value
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
+const localDate = (value?: string) =>
+  value ? new Date(value).toISOString().slice(0, 16) : "";
+function Section({
+  title,
+  description,
+  icon: Icon,
+  children,
+}: {
+  title: string;
+  description: string;
+  icon: React.ElementType;
+  children: React.ReactNode;
+}) {
+  return (
+    <Card className="overflow-hidden border-border/70 shadow-sm">
+      <CardHeader className="border-b bg-secondary/20">
+        <div className="flex gap-3">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-warning/10 text-warning">
+            <Icon className="size-4.5" />
+          </span>
+          <div>
+            <CardTitle>{title}</CardTitle>
+            <CardDescription>{description}</CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <div className="p-5">{children}</div>
+    </Card>
+  );
+}
+function Field({
+  label,
+  hint,
+  required,
+  children,
+  className,
+}: {
+  label: string;
+  hint?: string;
+  required?: boolean;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={cn("space-y-1.5", className)}>
+      <Label>
+        {label}
+        {required && <span className="text-destructive"> *</span>}
+      </Label>
+      {children}
+      {hint && <p className="text-[11px] text-muted-foreground">{hint}</p>}
+    </div>
+  );
+}
+const Toggle = ({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}) => (
+  <div className="flex items-center justify-between rounded-xl border p-3">
+    <Label>{label}</Label>
+    <Switch checked={checked} onCheckedChange={onChange} />
+  </div>
+);
+export function AuctionProductForm({
+  initialProduct,
+}: {
+  initialProduct?: InitialProduct;
+}) {
+  const router = useRouter(),
+    isEdit = Boolean(initialProduct);
+  const [saving, setSaving] = React.useState(false),
+    [tab, setTab] = React.useState("overview"),
+    [categories, setCategories] = React.useState<Option[]>([]),
+    [brands, setBrands] = React.useState<Option[]>([]),
+    [collections, setCollections] = React.useState<Option[]>([]);
+  const [name, setName] = React.useState(initialProduct?.name ?? ""),
+    [slug, setSlug] = React.useState(initialProduct?.slug ?? ""),
+    [slugTouched, setSlugTouched] = React.useState(isEdit),
+    [sku, setSku] = React.useState(initialProduct?.sku ?? ""),
+    [status, setStatus] = React.useState(
+      initialProduct?.auctionDetail?.status ?? "draft",
+    ),
+    [productStatus, setProductStatus] = React.useState(
+      initialProduct?.status ?? "DRAFT",
+    ),
+    [shortDescription, setShortDescription] = React.useState(
+      initialProduct?.shortDescription ?? "",
+    ),
+    [description, setDescription] = React.useState(
+      initialProduct?.description ?? "",
+    ),
+    [categoryId, setCategoryId] = React.useState(
+      initialProduct?.categoryId ?? "",
+    ),
+    [brandId, setBrandId] = React.useState(initialProduct?.brandId ?? ""),
+    [startingBid, setStartingBid] = React.useState(
+      initialProduct?.auctionDetail?.startingBid ?? "",
+    ),
+    [reservePrice, setReservePrice] = React.useState(
+      initialProduct?.auctionDetail?.reservePrice ?? "",
+    ),
+    [minIncrement, setMinIncrement] = React.useState(
+      initialProduct?.auctionDetail?.minIncrement ?? "1",
+    ),
+    [startAt, setStartAt] = React.useState(
+      localDate(initialProduct?.auctionDetail?.startAt),
+    ),
+    [endAt, setEndAt] = React.useState(
+      localDate(initialProduct?.auctionDetail?.endAt),
+    ),
+    [metaTitle, setMetaTitle] = React.useState(initialProduct?.metaTitle ?? ""),
+    [metaDescription, setMetaDescription] = React.useState(
+      initialProduct?.metaDescription ?? "",
+    );
+  const [config, setConfig] = React.useState<AuctionAdminConfig>(() =>
+    initialProduct
+      ? loadAuctionConfig(initialProduct.id)
+      : {
+          ...defaultAuctionConfig,
+          auctionId: `AUC-${new Date().getFullYear()}-${Math.random().toString().slice(2, 8)}`,
+        },
+  );
+  React.useEffect(() => {
+    Promise.all([
+      api.get<{ data: Option[] }>("/commerce/categories?limit=100"),
+      api.get<{ data: Option[] }>("/commerce/brands?limit=100"),
+      api.get<{ data: Option[] }>("/commerce/collections?limit=100"),
+    ])
+      .then(([c, b, l]) => {
+        setCategories(c.data);
+        setBrands(b.data);
+        setCollections(l.data);
+      })
+      .catch(() => {});
+  }, []);
+  function setC<K extends keyof AuctionAdminConfig>(
+    key: K,
+    value: AuctionAdminConfig[K],
+  ) {
+    setConfig((current) => ({ ...current, [key]: value }));
+  }
+  function toggleArray(
+    key: "shippingMethods" | "paymentMethods",
+    value: string,
+  ) {
+    setC(
+      key,
+      config[key].includes(value)
+        ? config[key].filter((item) => item !== value)
+        : [...config[key], value],
+    );
+  }
+  async function save(nextStatus?: string) {
+    if (
+      !name.trim() ||
+      !sku.trim() ||
+      !slug.trim() ||
+      !startingBid ||
+      !startAt ||
+      !endAt
+    ) {
+      toast.error(
+        "Name, SKU, slug, starting price, and auction dates are required",
+      );
+      return;
+    }
+    setSaving(true);
+    const resolvedStatus = nextStatus ?? status;
+    try {
+      let productId = initialProduct?.id;
+      const productPayload = {
+        name: name.trim(),
+        slug: slug.trim(),
+        sku: sku.trim(),
+        type: "AUCTION",
+        status: productStatus,
+        shortDescription: shortDescription || undefined,
+        description: description || undefined,
+        categoryId: categoryId || undefined,
+        brandId: brandId || undefined,
+        regularPrice: number(config.estimatedValue || startingBid),
+        stock: config.availableQuantity,
+        metaTitle: metaTitle || undefined,
+        metaDescription: metaDescription || undefined,
+      };
+      if (productId)
+        await api.patch(`/commerce/products/${productId}`, productPayload);
+      else
+        productId = (
+          await api.post<{ id: string }>("/commerce/products", productPayload)
+        ).id;
+      const auctionPayload = {
+        productId,
+        startingBid: number(startingBid),
+        reservePrice:
+          config.enableReserve && reservePrice
+            ? number(reservePrice)
+            : undefined,
+        minIncrement: number(minIncrement),
+        startAt: new Date(startAt).toISOString(),
+        endAt: new Date(endAt).toISOString(),
+        autoBidEnabled: config.allowAutoBidding,
+        status: resolvedStatus,
+      };
+      if (initialProduct?.auctionDetail?.id)
+        await api.patch(
+          `/commerce/auction-details/${initialProduct.auctionDetail.id}`,
+          auctionPayload,
+        );
+      else await api.post("/commerce/auction-details", auctionPayload);
+      saveAuctionConfig(productId, config);
+      if (!initialProduct?.images?.length && config.mainImage)
+        await api
+          .post("/commerce/product-images", {
+            productId,
+            url: config.mainImage,
+            altText: name,
+            displayOrder: 0,
+          })
+          .catch(() => null);
+      setStatus(resolvedStatus);
+      toast.success(isEdit ? "Auction updated" : "Auction created");
+      if (!isEdit) router.push(`/admin/products/auction/${productId}`);
+      else router.refresh();
+    } catch (error) {
+      toast.error(
+        error instanceof ApiError ? error.message : "Unable to save auction",
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+  const tabs = [
+    { value: "overview", label: "Product" },
+    { value: "pricing", label: "Pricing & Type" },
+    { value: "schedule", label: "Schedule & Rules" },
+    { value: "eligibility", label: "Eligibility & Quantity" },
+    { value: "fulfillment", label: "Shipping & Payment" },
+    { value: "winner", label: "Winner & Visibility" },
+    { value: "media", label: "Media & SEO" },
+  ];
+  return (
+    <div className="mx-auto max-w-[1500px] pb-28">
+      <div className="sticky top-0 z-30 mb-5 border-b bg-background/90 px-1 py-3 backdrop-blur-xl">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => router.push("/admin/products/auction")}
+            >
+              <ChevronLeft className="size-4" />
+            </Button>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h1 className="truncate font-display text-xl font-bold sm:text-2xl">
+                  {isEdit ? `Edit ${name}` : "Add Auction Product"}
+                </h1>
+                <Badge
+                  variant={
+                    status === "live"
+                      ? "success"
+                      : status === "paused"
+                        ? "warning"
+                        : "secondary"
+                  }
+                >
+                  {status}
+                </Badge>
+              </div>
+              <p className="hidden text-xs text-muted-foreground sm:block">
+                Configure auction rules, schedule, bidding, payments, and
+                fulfillment.
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="hidden sm:inline-flex"
+              onClick={() => save("draft")}
+              disabled={saving}
+            >
+              <Archive className="size-4" />
+              Save draft
+            </Button>
+            <Button onClick={() => save()} disabled={saving}>
+              <Save className="size-4" />
+              {saving ? "Saving…" : "Save auction"}
+            </Button>
+          </div>
+        </div>
+      </div>
+      <Tabs value={tab} onValueChange={setTab} className="min-w-0 space-y-5">
+        <div className="w-full max-w-[calc(100vw-2rem)] overflow-x-auto pb-1 lg:max-w-none">
+          <TabsList className="min-w-max">
+            {tabs.map((item) => (
+              <TabsTrigger key={item.value} value={item.value}>
+                {item.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
+        <TabsContent value="overview" className="space-y-5">
+          <Section
+            title="Basic Product Information"
+            description="Identify the item, seller, condition, and catalog placement."
+            icon={Box}
+          >
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="Product name" required>
+                <Input
+                  value={name}
+                  onChange={(event) => {
+                    setName(event.target.value);
+                    if (!slugTouched) setSlug(slugify(event.target.value));
+                  }}
+                  placeholder="Limited Edition Chronograph"
+                />
+              </Field>
+              <Field label="Auction ID">
+                <Input
+                  value={config.auctionId}
+                  onChange={(event) => setC("auctionId", event.target.value)}
+                />
+              </Field>
+              <Field label="SKU" required>
+                <Input
+                  value={sku}
+                  onChange={(event) => setSku(event.target.value)}
+                />
+              </Field>
+              <Field label="Condition">
+                <Select
+                  value={config.condition}
+                  onValueChange={(value) => setC("condition", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[
+                      "New",
+                      "Like New",
+                      "Used",
+                      "Refurbished",
+                      "Vintage",
+                      "Damaged",
+                      "Other",
+                    ].map((item) => (
+                      <SelectItem key={item} value={item}>
+                        {item}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field label="Category">
+                <Select
+                  value={categoryId || "none"}
+                  onValueChange={(value) =>
+                    setCategoryId(value === "none" ? "" : value)
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No category</SelectItem>
+                    {categories.map((item) => (
+                      <SelectItem key={item.id} value={item.id}>
+                        {item.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field label="Subcategory">
+                <Input
+                  value={config.subcategory}
+                  onChange={(event) => setC("subcategory", event.target.value)}
+                />
+              </Field>
+              <Field label="Brand">
+                <Select
+                  value={brandId || "none"}
+                  onValueChange={(value) =>
+                    setBrandId(value === "none" ? "" : value)
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No brand</SelectItem>
+                    {brands.map((item) => (
+                      <SelectItem key={item.id} value={item.id}>
+                        {item.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field label="Collection">
+                <Select
+                  value={config.collection || "none"}
+                  onValueChange={(value) =>
+                    setC("collection", value === "none" ? "" : value)
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No collection</SelectItem>
+                    {collections.map((item) => (
+                      <SelectItem key={item.id} value={item.name}>
+                        {item.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field label="Seller">
+                <Input
+                  value={config.seller}
+                  onChange={(event) => setC("seller", event.target.value)}
+                />
+              </Field>
+              <Field label="Warehouse / location">
+                <Input
+                  value={config.location}
+                  onChange={(event) => setC("location", event.target.value)}
+                />
+              </Field>
+              <Field label="Tags" className="md:col-span-2">
+                <Input
+                  value={config.tags}
+                  onChange={(event) => setC("tags", event.target.value)}
+                  placeholder="luxury, collectible, limited-edition"
+                />
+              </Field>
+              <Field label="Short description" className="md:col-span-2">
+                <Textarea
+                  rows={2}
+                  value={shortDescription}
+                  onChange={(event) => setShortDescription(event.target.value)}
+                />
+              </Field>
+              <Field label="Full description" className="md:col-span-2">
+                <Textarea
+                  rows={7}
+                  value={description}
+                  onChange={(event) => setDescription(event.target.value)}
+                />
+              </Field>
+            </div>
+          </Section>
+        </TabsContent>
+        <TabsContent value="pricing" className="space-y-5">
+          <Section
+            title="Auction Type"
+            description="Choose the bidding mechanism and commercial format."
+            icon={Gavel}
+          >
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <Field label="Auction type">
+                <Select
+                  value={config.auctionType}
+                  onValueChange={(value) => setC("auctionType", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {AUCTION_TYPES.map((item) => (
+                      <SelectItem key={item} value={item}>
+                        {item}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field label="Auction status">
+                <Select value={status} onValueChange={setStatus}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {AUCTION_STATUSES.map((item) => (
+                      <SelectItem key={item} value={item}>
+                        {item.replaceAll("-", " ")}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field label="Product status">
+                <Select value={productStatus} onValueChange={setProductStatus}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[
+                      "DRAFT",
+                      "PUBLISHED",
+                      "DISABLED",
+                      "ARCHIVED",
+                      "PENDING_REVIEW",
+                      "OUT_OF_STOCK",
+                    ].map((item) => (
+                      <SelectItem key={item} value={item}>
+                        {item.replaceAll("_", " ")}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+            </div>
+          </Section>
+          <Section
+            title="Auction Pricing"
+            description="Configure entry price, increments, reserve, premiums, and commissions."
+            icon={CircleDollarSign}
+          >
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <Field label="Starting price" required>
+                <Input
+                  type="number"
+                  min="0"
+                  value={startingBid}
+                  onChange={(event) => setStartingBid(event.target.value)}
+                />
+              </Field>
+              <Field label="Minimum increment">
+                <Input
+                  type="number"
+                  min="0"
+                  value={minIncrement}
+                  onChange={(event) => setMinIncrement(event.target.value)}
+                />
+              </Field>
+              <Field label="Maximum increment">
+                <Input
+                  type="number"
+                  value={config.maxIncrement ?? ""}
+                  placeholder="Unlimited"
+                  onChange={(event) =>
+                    setC(
+                      "maxIncrement",
+                      event.target.value ? number(event.target.value) : null,
+                    )
+                  }
+                />
+              </Field>
+              <Field label="Reserve price">
+                <Input
+                  type="number"
+                  value={reservePrice}
+                  onChange={(event) => setReservePrice(event.target.value)}
+                />
+              </Field>
+              <Field label="Buy now price">
+                <Input
+                  type="number"
+                  value={config.buyNowPrice ?? ""}
+                  onChange={(event) =>
+                    setC(
+                      "buyNowPrice",
+                      event.target.value ? number(event.target.value) : null,
+                    )
+                  }
+                />
+              </Field>
+              <Field label="Estimated value">
+                <Input
+                  type="number"
+                  value={config.estimatedValue}
+                  onChange={(event) =>
+                    setC("estimatedValue", number(event.target.value))
+                  }
+                />
+              </Field>
+              <Field label="Deposit amount">
+                <Input
+                  type="number"
+                  value={config.depositAmount}
+                  onChange={(event) =>
+                    setC("depositAmount", number(event.target.value))
+                  }
+                />
+              </Field>
+              <Field label="Buyer premium %">
+                <Input
+                  type="number"
+                  value={config.buyerPremium}
+                  onChange={(event) =>
+                    setC("buyerPremium", number(event.target.value))
+                  }
+                />
+              </Field>
+              <Field label="Seller commission %">
+                <Input
+                  type="number"
+                  value={config.sellerCommission}
+                  onChange={(event) =>
+                    setC("sellerCommission", number(event.target.value))
+                  }
+                />
+              </Field>
+              <Field label="Tax class">
+                <Input
+                  value={config.taxClass}
+                  onChange={(event) => setC("taxClass", event.target.value)}
+                />
+              </Field>
+              <Field label="Currency">
+                <Select
+                  value={config.currency}
+                  onValueChange={(value) => setC("currency", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {["USD", "EUR", "GBP", "AED", "SAR", "EGP"].map((item) => (
+                      <SelectItem key={item} value={item}>
+                        {item}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+              {[
+                ["Reserve price", "enableReserve"],
+                ["Buy now", "enableBuyNow"],
+                ["Hide reserve", "hideReserve"],
+                ["Automatic bidding", "allowAutoBidding"],
+                ["Bid deposit", "requireDeposit"],
+                ["Buyer premium", "enableBuyerPremium"],
+              ].map(([label, key]) => (
+                <Toggle
+                  key={key}
+                  label={`Enable ${label}`}
+                  checked={Boolean(config[key as "enableReserve"])}
+                  onChange={(checked) => setC(key as "enableReserve", checked)}
+                />
+              ))}
+            </div>
+          </Section>
+        </TabsContent>
+        <TabsContent value="schedule" className="space-y-5">
+          <Section
+            title="Auction Schedule"
+            description="Plan previews, registration, opening, closing, and anti-sniping extensions."
+            icon={CalendarClock}
+          >
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <Field label="Start date & time" required>
+                <Input
+                  type="datetime-local"
+                  value={startAt}
+                  onChange={(event) => setStartAt(event.target.value)}
+                />
+              </Field>
+              <Field label="End date & time" required>
+                <Input
+                  type="datetime-local"
+                  value={endAt}
+                  onChange={(event) => setEndAt(event.target.value)}
+                />
+              </Field>
+              <Field label="Timezone">
+                <Input
+                  value={config.timezone}
+                  onChange={(event) => setC("timezone", event.target.value)}
+                />
+              </Field>
+              <Field label="Preview start">
+                <Input
+                  type="datetime-local"
+                  value={config.previewStart}
+                  onChange={(event) => setC("previewStart", event.target.value)}
+                />
+              </Field>
+              <Field label="Registration deadline">
+                <Input
+                  type="datetime-local"
+                  value={config.registrationDeadline}
+                  onChange={(event) =>
+                    setC("registrationDeadline", event.target.value)
+                  }
+                />
+              </Field>
+              <Field label="Extension trigger (minutes)">
+                <Input
+                  type="number"
+                  value={config.extensionTriggerMinutes}
+                  onChange={(event) =>
+                    setC("extensionTriggerMinutes", number(event.target.value))
+                  }
+                />
+              </Field>
+              <Field label="Extension duration (minutes)">
+                <Input
+                  type="number"
+                  value={config.extensionDurationMinutes}
+                  onChange={(event) =>
+                    setC("extensionDurationMinutes", number(event.target.value))
+                  }
+                />
+              </Field>
+              <Field label="Maximum extensions">
+                <Input
+                  type="number"
+                  value={config.maxExtensions}
+                  onChange={(event) =>
+                    setC("maxExtensions", number(event.target.value))
+                  }
+                />
+              </Field>
+              {[
+                ["Start immediately", "startImmediately"],
+                ["Auto extend auction", "autoExtend"],
+                ["Close automatically", "autoClose"],
+              ].map(([label, key]) => (
+                <Toggle
+                  key={key}
+                  label={label}
+                  checked={Boolean(config[key as "startImmediately"])}
+                  onChange={(checked) =>
+                    setC(key as "startImmediately", checked)
+                  }
+                />
+              ))}
+            </div>
+          </Section>
+          <Section
+            title="Bid Rules"
+            description="Control bid limits, approvals, anonymity, withdrawal, and fraud safeguards."
+            icon={ShieldCheck}
+          >
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <Field label="Maximum bid amount">
+                <Input
+                  type="number"
+                  value={config.maxBidAmount ?? ""}
+                  placeholder="Unlimited"
+                  onChange={(event) =>
+                    setC(
+                      "maxBidAmount",
+                      event.target.value ? number(event.target.value) : null,
+                    )
+                  }
+                />
+              </Field>
+              <Field label="Max bids per customer">
+                <Input
+                  type="number"
+                  value={config.maxBidsPerCustomer ?? ""}
+                  placeholder="Unlimited"
+                  onChange={(event) =>
+                    setC(
+                      "maxBidsPerCustomer",
+                      event.target.value ? number(event.target.value) : null,
+                    )
+                  }
+                />
+              </Field>
+              <Field label="Withdrawal deadline">
+                <Input
+                  type="datetime-local"
+                  value={config.withdrawalDeadline}
+                  onChange={(event) =>
+                    setC("withdrawalDeadline", event.target.value)
+                  }
+                />
+              </Field>
+              <Field label="Restricted countries">
+                <Input
+                  value={config.countries}
+                  onChange={(event) => setC("countries", event.target.value)}
+                  placeholder="Comma-separated ISO codes"
+                />
+              </Field>
+              {[
+                ["Bid approval required", "bidApproval"],
+                ["Anonymous bidding", "anonymousBidding"],
+                ["Hide bidder identity", "hideBidderIdentity"],
+                ["Allow bid withdrawal", "allowWithdrawal"],
+                ["Block seller bidding", "blockSeller"],
+                ["Block duplicate accounts", "blockDuplicates"],
+              ].map(([label, key]) => (
+                <Toggle
+                  key={key}
+                  label={label}
+                  checked={Boolean(config[key as "bidApproval"])}
+                  onChange={(checked) => setC(key as "bidApproval", checked)}
+                />
+              ))}
+            </div>
+          </Section>
+        </TabsContent>
+        <TabsContent value="eligibility" className="space-y-5">
+          <Section
+            title="Bidder Eligibility"
+            description="Choose who can participate and required verification levels."
+            icon={Users}
+          >
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <Field label="Eligibility">
+                <Select
+                  value={config.eligibility}
+                  onValueChange={(value) => setC("eligibility", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[
+                      "Public Auction",
+                      "Registered Customers Only",
+                      "Verified Customers Only",
+                      "Approved Bidders Only",
+                      "Customer Groups Only",
+                      "Invitation Only",
+                    ].map((item) => (
+                      <SelectItem key={item} value={item}>
+                        {item}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+              {[
+                ["Email verification", "emailVerification"],
+                ["Phone verification", "phoneVerification"],
+                ["Identity verification", "identityVerification"],
+                ["Business verification", "businessVerification"],
+                ["Payment verification", "paymentVerification"],
+                ["Deposit verification", "depositVerification"],
+              ].map(([label, key]) => (
+                <Toggle
+                  key={key}
+                  label={label}
+                  checked={Boolean(config[key as "emailVerification"])}
+                  onChange={(checked) =>
+                    setC(key as "emailVerification", checked)
+                  }
+                />
+              ))}
+            </div>
+          </Section>
+          <Section
+            title="Product Quantity"
+            description="Support single items, lots, bundles, quantities, and multiple winners."
+            icon={PackageCheck}
+          >
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <Field label="Quantity format">
+                <Select
+                  value={config.quantityType}
+                  onValueChange={(value) => setC("quantityType", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[
+                      "Single Item Auction",
+                      "Multiple Quantity Auction",
+                      "Multi-Winner Auction",
+                      "Lot Auction",
+                      "Bundle Auction",
+                    ].map((item) => (
+                      <SelectItem key={item} value={item}>
+                        {item}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field label="Available quantity">
+                <Input
+                  type="number"
+                  value={config.availableQuantity}
+                  onChange={(event) =>
+                    setC("availableQuantity", number(event.target.value))
+                  }
+                />
+              </Field>
+              <Field label="Units per lot">
+                <Input
+                  type="number"
+                  value={config.unitsPerLot}
+                  onChange={(event) =>
+                    setC("unitsPerLot", number(event.target.value))
+                  }
+                />
+              </Field>
+              <Field label="Number of lots">
+                <Input
+                  type="number"
+                  value={config.numberOfLots}
+                  onChange={(event) =>
+                    setC("numberOfLots", number(event.target.value))
+                  }
+                />
+              </Field>
+              <Field label="Max lots per bidder">
+                <Input
+                  type="number"
+                  value={config.maxLotsPerBidder}
+                  onChange={(event) =>
+                    setC("maxLotsPerBidder", number(event.target.value))
+                  }
+                />
+              </Field>
+            </div>
+          </Section>
+        </TabsContent>
+        <TabsContent value="fulfillment" className="space-y-5">
+          <Section
+            title="Shipping & Fulfillment"
+            description="Configure physical, freight, pickup, international, and digital delivery."
+            icon={Truck}
+          >
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid gap-2 sm:col-span-2 lg:col-span-4">
+                {[
+                  "Shipping Available",
+                  "Local Pickup",
+                  "Digital Delivery",
+                  "Freight Shipping",
+                  "International Shipping",
+                  "Seller-Arranged Shipping",
+                  "Buyer-Arranged Shipping",
+                ].map((method) => (
+                  <Toggle
+                    key={method}
+                    label={method}
+                    checked={config.shippingMethods.includes(method)}
+                    onChange={() => toggleArray("shippingMethods", method)}
+                  />
+                ))}
+              </div>
+              {["weight", "length", "width", "height"].map((key) => (
+                <Field key={key} label={`Shipping ${key}`}>
+                  <Input
+                    value={String(config[key as "weight"])}
+                    onChange={(event) =>
+                      setC(key as "weight", event.target.value)
+                    }
+                  />
+                </Field>
+              ))}
+              <Field label="Shipping class">
+                <Input
+                  value={config.shippingClass}
+                  onChange={(event) =>
+                    setC("shippingClass", event.target.value)
+                  }
+                />
+              </Field>
+              <Field label="Pickup location">
+                <Input
+                  value={config.pickupLocation}
+                  onChange={(event) =>
+                    setC("pickupLocation", event.target.value)
+                  }
+                />
+              </Field>
+              <Field label="Shipping cost">
+                <Input
+                  type="number"
+                  value={config.shippingCost}
+                  onChange={(event) =>
+                    setC("shippingCost", number(event.target.value))
+                  }
+                />
+              </Field>
+              <Field label="Handling fee">
+                <Input
+                  type="number"
+                  value={config.handlingFee}
+                  onChange={(event) =>
+                    setC("handlingFee", number(event.target.value))
+                  }
+                />
+              </Field>
+              <Field label="Estimated delivery">
+                <Input
+                  value={config.deliveryTime}
+                  onChange={(event) => setC("deliveryTime", event.target.value)}
+                />
+              </Field>
+            </div>
+          </Section>
+          <Section
+            title="Payment Settings"
+            description="Control methods, deposits, deadlines, penalties, escrow, and approval."
+            icon={CircleDollarSign}
+          >
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid gap-2 sm:col-span-2 lg:col-span-4">
+                {[
+                  "Credit Card",
+                  "Bank Transfer",
+                  "Digital Wallet",
+                  "Cash on Pickup",
+                  "Escrow",
+                  "Custom Payment Method",
+                ].map((method) => (
+                  <Toggle
+                    key={method}
+                    label={method}
+                    checked={config.paymentMethods.includes(method)}
+                    onChange={() => toggleArray("paymentMethods", method)}
+                  />
+                ))}
+              </div>
+              <Field label="Payment deadline (days)">
+                <Input
+                  type="number"
+                  value={config.paymentDeadlineDays}
+                  onChange={(event) =>
+                    setC("paymentDeadlineDays", number(event.target.value))
+                  }
+                />
+              </Field>
+              <Field label="Late penalty %">
+                <Input
+                  type="number"
+                  value={config.latePenalty}
+                  onChange={(event) =>
+                    setC("latePenalty", number(event.target.value))
+                  }
+                />
+              </Field>
+              {[
+                ["Full payment required", "fullPayment"],
+                ["Partial payment allowed", "partialPayment"],
+                ["Deposit deduction", "depositDeduction"],
+                ["Auto-charge winner", "autoCharge"],
+                ["Escrow payment", "escrow"],
+                ["Manual approval", "manualPaymentApproval"],
+              ].map(([label, key]) => (
+                <Toggle
+                  key={key}
+                  label={label}
+                  checked={Boolean(config[key as "fullPayment"])}
+                  onChange={(checked) => setC(key as "fullPayment", checked)}
+                />
+              ))}
+            </div>
+          </Section>
+        </TabsContent>
+        <TabsContent value="winner" className="space-y-5">
+          <Section
+            title="Winner Rules"
+            description="Define selection, reserve, approvals, backup offers, and payment deadlines."
+            icon={Gavel}
+          >
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <Field label="Winner payment deadline">
+                <Input
+                  type="number"
+                  value={config.winnerDeadlineDays}
+                  onChange={(event) =>
+                    setC("winnerDeadlineDays", number(event.target.value))
+                  }
+                />
+              </Field>
+              <Field label="Notification template">
+                <Input
+                  value={config.notificationTemplate}
+                  onChange={(event) =>
+                    setC("notificationTemplate", event.target.value)
+                  }
+                />
+              </Field>
+              {[
+                ["Highest bidder wins", "highestBidWins"],
+                ["Reserve must be met", "reserveMustBeMet"],
+                ["Admin approval", "adminApproval"],
+                ["Seller approval", "sellerApproval"],
+                ["Multiple winners", "multipleWinners"],
+                ["Automatic selection", "autoWinner"],
+                ["Backup winner", "backupWinner"],
+                ["Offer second-highest", "offerSecondHighest"],
+              ].map(([label, key]) => (
+                <Toggle
+                  key={key}
+                  label={label}
+                  checked={Boolean(config[key as "highestBidWins"])}
+                  onChange={(checked) => setC(key as "highestBidWins", checked)}
+                />
+              ))}
+              <Field
+                label="Cancellation policy"
+                className="sm:col-span-2 lg:col-span-4"
+              >
+                <Textarea
+                  rows={3}
+                  value={config.cancellationPolicy}
+                  onChange={(event) =>
+                    setC("cancellationPolicy", event.target.value)
+                  }
+                />
+              </Field>
+            </div>
+          </Section>
+          <Section
+            title="Auction Visibility"
+            description="Control audience, storefront discovery, and public auction metrics."
+            icon={Eye}
+          >
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <Field label="Visibility">
+                <Select
+                  value={config.visibility}
+                  onValueChange={(value) => setC("visibility", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[
+                      "Public",
+                      "Registered Users Only",
+                      "Verified Bidders Only",
+                      "Customer Groups Only",
+                      "Private",
+                      "Invitation Only",
+                      "Hidden",
+                    ].map((item) => (
+                      <SelectItem key={item} value={item}>
+                        {item}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+              {[
+                ["Featured auction", "featured"],
+                ["Homepage visibility", "homepage"],
+                ["Show in search", "showSearch"],
+                ["Show bid count", "showBidCount"],
+                ["Show bid history", "showHistory"],
+                ["Show watcher count", "showWatchers"],
+                ["Show current price", "showPrice"],
+                ["Highlighted auction", "highlighted"],
+                ["Verified auction", "verified"],
+                ["Premium listing", "premium"],
+              ].map(([label, key]) => (
+                <Toggle
+                  key={key}
+                  label={label}
+                  checked={Boolean(config[key as "featured"])}
+                  onChange={(checked) => setC(key as "featured", checked)}
+                />
+              ))}
+            </div>
+          </Section>
+        </TabsContent>
+        <TabsContent value="media" className="space-y-5">
+          <Section
+            title="Product Media & Documents"
+            description="Add gallery, video, 360° views, certificates, authenticity, and inspection records."
+            icon={ImagePlus}
+          >
+            <div className="grid gap-4 sm:grid-cols-2">
+              <MediaUploadField
+                label="Main product image"
+                value={config.mainImage}
+                onChange={(url) => setC("mainImage", url)}
+              />
+              <MediaUploadField
+                label="Product video"
+                kind="video"
+                value={config.video}
+                onChange={(url) => setC("video", url)}
+              />
+              <MediaUploadListField
+                label="Gallery"
+                values={config.gallery.split("\n").filter(Boolean)}
+                onChange={(urls) => setC("gallery", urls.join("\n"))}
+                className="sm:col-span-2"
+              />
+              <MediaUploadListField
+                label="360-degree images"
+                values={config.images360.split("\n").filter(Boolean)}
+                onChange={(urls) => setC("images360", urls.join("\n"))}
+                className="sm:col-span-2"
+              />
+              {[
+                { key: "documents", label: "Product documents" },
+                { key: "certificates", label: "Certificates" },
+                { key: "authenticityDocs", label: "Authenticity documents" },
+                { key: "inspectionReport", label: "Inspection report" },
+              ].map((item) => (
+                <Field key={item.key} label={item.label}>
+                  <Textarea
+                    rows={3}
+                    value={String(config[item.key as "documents"])}
+                    onChange={(event) =>
+                      setC(item.key as "documents", event.target.value)
+                    }
+                    placeholder="One document URL per line"
+                  />
+                </Field>
+              ))}
+            </div>
+          </Section>
+          <Section
+            title="SEO & Auction Schema"
+            description="Optimize auction discovery with canonical metadata and structured markup."
+            icon={SearchCheck}
+          >
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="URL slug" required>
+                <div className="relative">
+                  <Link2 className="absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    className="ps-9"
+                    value={slug}
+                    onChange={(event) => {
+                      setSlugTouched(true);
+                      setSlug(event.target.value);
+                    }}
+                  />
+                </div>
+              </Field>
+              <Field label="Canonical URL">
+                <Input
+                  value={config.canonicalUrl}
+                  onChange={(event) => setC("canonicalUrl", event.target.value)}
+                />
+              </Field>
+              <Field label="Meta title" className="sm:col-span-2">
+                <Input
+                  maxLength={60}
+                  value={metaTitle}
+                  onChange={(event) => setMetaTitle(event.target.value)}
+                />
+              </Field>
+              <Field label="Meta description" className="sm:col-span-2">
+                <Textarea
+                  maxLength={160}
+                  rows={3}
+                  value={metaDescription}
+                  onChange={(event) => setMetaDescription(event.target.value)}
+                />
+              </Field>
+              <MediaUploadField
+                label="Open Graph image"
+                value={config.openGraphImage}
+                onChange={(url) => setC("openGraphImage", url)}
+              />
+              <Field label="Structured data">
+                <Input
+                  value={config.structuredData}
+                  onChange={(event) =>
+                    setC("structuredData", event.target.value)
+                  }
+                />
+              </Field>
+              <Toggle
+                label="Auction schema markup"
+                checked={config.schemaMarkup}
+                onChange={(checked) => setC("schemaMarkup", checked)}
+              />
+            </div>
+          </Section>
+        </TabsContent>
+      </Tabs>
+      <Button
+        size="lg"
+        className="fixed bottom-6 end-6 z-40 rounded-full shadow-soft-lg sm:hidden"
+        onClick={() => save()}
+        disabled={saving}
+      >
+        <Save className="size-4" />
+        Save
+      </Button>
+    </div>
+  );
+}

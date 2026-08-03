@@ -13,3 +13,8 @@ node_modules
 
 .agents/
 
+/uploads/*
+!/uploads/.gitkeep
+
+
+/uploads/
