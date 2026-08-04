@@ -18,20 +18,21 @@ import {
   RotateCcw,
   Plus,
   Copy,
+  Download,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "../ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FoodImage } from "../food-image";
 import { ProductCard } from "../product-card";
 import { EmptyState } from "@/components/common/empty-state";
 import { Badge } from "../ui/badge";
 import { useWishlistStore } from "@/lib/storefront/store/wishlist-store";
 import { useOrderStore } from "@/lib/storefront/store/order-store";
 import { useCatalogStore } from "@/lib/storefront/store/catalog-store";
-import { mockAddresses, mockPastOrders, mockPaymentMethods, mockCoupons, mockNotifications, mockSupportTickets } from "@/lib/storefront/data/account";
-import { formatSAR } from "@/lib/storefront/format";
+import { useCustomerAuth } from "@/lib/storefront/customer-auth";
+import { api } from "@/lib/api/client";
+import { formatMoney } from "@/lib/storefront/format";
 import { toast } from "sonner";
 
 const tabs = [
@@ -39,6 +40,7 @@ const tabs = [
   { value: "orders", label: "Orders", icon: Package },
   { value: "addresses", label: "Addresses", icon: MapPin },
   { value: "favorites", label: "Favorites", icon: Heart },
+  { value: "downloads", label: "Downloads", icon: Download },
   { value: "payments", label: "Payments", icon: CreditCard },
   { value: "coupons", label: "Coupons", icon: TicketPercent },
   { value: "loyalty", label: "Loyalty", icon: Award },
@@ -51,243 +53,279 @@ export function AccountPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tab = searchParams.get("tab") ?? "profile";
-
+  const { customer, loading, logout, token, authHeaders, refresh } = useCustomerAuth();
   const { productIds } = useWishlistStore();
   const { orders: placedOrders } = useOrderStore();
   const products = useCatalogStore((s) => s.products);
   const favoriteProducts = products.filter((p) => productIds.includes(p.id));
-  const allOrders = [...placedOrders, ...mockPastOrders.map((o) => ({ ...o, createdAt: o.date }))];
+
+  const [remoteOrders, setRemoteOrders] = React.useState<any[]>([]);
+  const [addresses, setAddresses] = React.useState<any[]>([]);
+  const [loyalty, setLoyalty] = React.useState<{ points: number; history: any[] }>({ points: 0, history: [] });
+  const [downloads, setDownloads] = React.useState<any[]>([]);
+  const [coupons, setCoupons] = React.useState<any[]>([]);
+  const [newAddress, setNewAddress] = React.useState({ label: "home", line1: "", city: "", country: "SA", phone: "" });
+
+  React.useEffect(() => {
+    if (!loading && !customer) router.replace("/account/login");
+  }, [customer, loading, router]);
+
+  React.useEffect(() => {
+    if (!token) return;
+    const headers = authHeaders();
+    Promise.all([
+      fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api/v1"}/storefront/account/orders`, { headers }).then((r) => r.json()),
+      fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api/v1"}/storefront/account/addresses`, { headers }).then((r) => r.json()),
+      fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api/v1"}/storefront/account/loyalty`, { headers }).then((r) => r.json()),
+      fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api/v1"}/storefront/account/digital-downloads`, { headers }).then((r) => r.json()),
+      api.get<{ data: any[] }>("/storefront/coupons").catch(() => ({ data: [] })),
+    ]).then(([orders, addrs, loy, dig, coup]) => {
+      setRemoteOrders(orders.data ?? []);
+      setAddresses(addrs.data ?? []);
+      setLoyalty({ points: loy.points ?? 0, history: loy.history ?? [] });
+      setDownloads(dig.data ?? []);
+      setCoupons(coup.data ?? []);
+    });
+  }, [token, authHeaders]);
+
+  if (loading || !customer) {
+    return <div className="mx-auto max-w-[1180px] px-4 py-20 text-center text-muted-foreground">Loading account…</div>;
+  }
+
+  const initials = customer.name
+    .split(" ")
+    .map((p) => p[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+
+  async function saveAddress() {
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api/v1"}/storefront/account/addresses`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ ...newAddress, isDefault: addresses.length === 0 }),
+      });
+      toast.success("Address saved");
+      setNewAddress({ label: "home", line1: "", city: "", country: "SA", phone: "" });
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api/v1"}/storefront/account/addresses`, {
+        headers: authHeaders(),
+      });
+      const json = await res.json();
+      setAddresses(json.data ?? []);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not save address");
+    }
+  }
+
+  async function requestRefund(orderId: string) {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api/v1"}/storefront/account/refunds`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ orderId, reason: "Customer request from account" }),
+      });
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.message || "Failed");
+      toast.success("Refund request submitted");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not request refund");
+    }
+  }
+
+  async function redeem(points: number, title: string) {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api/v1"}/storefront/account/loyalty/redeem`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ points, reason: title }),
+      });
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.message || "Failed");
+      toast.success(`Redeemed ${points} points`);
+      await refresh();
+      setLoyalty((prev) => ({ ...prev, points: json.remaining }));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Redeem failed");
+    }
+  }
+
+  const referralCode = `HALO-${customer.id.slice(-6).toUpperCase()}`;
 
   return (
     <div className="mx-auto max-w-[1180px] px-4 py-8 sm:px-6 lg:px-10 lg:py-12">
-      <Tabs
-        value={tab}
-        onValueChange={(value) => router.replace(`/account?tab=${value}`, { scroll: false })}
-      >
+      <Tabs value={tab} onValueChange={(value) => router.replace(`/account?tab=${value}`, { scroll: false })}>
         <div className="grid items-start gap-6 lg:grid-cols-[248px_minmax(0,1fr)] lg:gap-8">
           <aside className="lg:sticky lg:top-24">
-            <div className="flex items-center gap-3 rounded-[22px] bg-primary p-4 text-primary-foreground shadow-[0_22px_55px_-34px_rgba(18,75,45,0.9)]">
-              <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-white/12 text-base font-bold text-white ring-1 ring-white/15">
-                AF
-              </span>
+            <div className="flex items-center gap-3 rounded-[22px] bg-primary p-4 text-primary-foreground">
+              <span className="flex size-12 items-center justify-center rounded-2xl bg-white/12 text-base font-bold">{initials}</span>
               <div className="min-w-0">
-                <h1 className="truncate font-display text-base font-semibold text-white">Amelia Foster</h1>
-                <p className="truncate text-xs text-white/65">amelia@example.com</p>
+                <h1 className="truncate font-display text-base font-semibold">{customer.name}</h1>
+                <p className="truncate text-xs text-white/65">{customer.email}</p>
               </div>
             </div>
-
             <TabsList className="mt-3 flex h-auto w-full justify-start gap-2 overflow-x-auto bg-transparent p-0 pb-2 lg:grid lg:grid-cols-1 lg:overflow-visible lg:pb-0">
               {tabs.map((item) => (
-                <TabsTrigger
-                  key={item.value}
-                  value={item.value}
-                  className="shrink-0 justify-start gap-2 rounded-xl border border-transparent bg-card px-3.5 py-2.5 text-foreground/65 shadow-none transition-colors hover:bg-secondary/70 hover:text-primary data-[state=active]:border-primary/10 data-[state=active]:bg-secondary data-[state=active]:text-primary data-[state=active]:shadow-none"
-                >
+                <TabsTrigger key={item.value} value={item.value} className="justify-start gap-2 rounded-xl px-3 py-2.5 data-[state=active]:bg-card data-[state=active]:shadow-soft">
                   <item.icon className="size-4" /> {item.label}
                 </TabsTrigger>
               ))}
             </TabsList>
+            <Button variant="outline" className="mt-3 w-full gap-2" onClick={() => { logout(); router.push("/"); }}>
+              <LogOut className="size-4" /> Sign out
+            </Button>
           </aside>
 
-          <div className="min-w-0 rounded-[24px] bg-card p-5 shadow-soft sm:p-7 lg:p-8">
-          <TabsContent value="profile" className="space-y-4">
-            <h2 className="font-display text-xl font-semibold text-brown">Profile Information</h2>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label>Full name</Label>
-                <Input defaultValue="Amelia Foster" className="h-11 rounded-xl" />
+          <div className="min-w-0">
+            <TabsContent value="profile" className="mt-0 rounded-[28px] bg-card p-6 shadow-soft">
+              <h2 className="font-display text-xl font-semibold text-brown">Profile</h2>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <div><Label>Name</Label><Input value={customer.name} readOnly className="mt-1.5 h-11 rounded-xl" /></div>
+                <div><Label>Email</Label><Input value={customer.email} readOnly className="mt-1.5 h-11 rounded-xl" /></div>
+                <div><Label>Phone</Label><Input value={customer.phone || ""} readOnly className="mt-1.5 h-11 rounded-xl" /></div>
+                <div><Label>Loyalty points</Label><Input value={String(loyalty.points || customer.loyaltyPoints)} readOnly className="mt-1.5 h-11 rounded-xl" /></div>
               </div>
-              <div className="space-y-1.5">
-                <Label>Email</Label>
-                <Input defaultValue="amelia@example.com" className="h-11 rounded-xl" />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Phone</Label>
-                <Input defaultValue="+1 555 123 4567" className="h-11 rounded-xl" />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Preferred language</Label>
-                <Input defaultValue="English" className="h-11 rounded-xl" />
-              </div>
-            </div>
-            <div className="flex items-center justify-between border-t border-border pt-5">
-              <Button onClick={() => toast.success("Profile updated")}>Save Changes</Button>
-              <Button
-                variant="outline"
-                className="gap-2 text-destructive"
-                onClick={() => {
-                  toast.success("Signed out");
-                  router.push("/");
-                }}
-              >
-                <LogOut className="size-4" /> Logout
-              </Button>
-            </div>
-          </TabsContent>
+            </TabsContent>
 
-          <TabsContent value="orders" className="space-y-4">
-            <h2 className="font-display text-xl font-semibold text-brown">Order History</h2>
-            {allOrders.length === 0 ? (
-              <EmptyState icon={Package} title="No orders yet" description="Your past orders will show up here." />
-            ) : (
-              <div className="space-y-3">
-                {allOrders.map((o) => (
-                  <div key={o.id} className="flex items-center gap-4 rounded-2xl border border-border/70 p-4">
-                    {"image" in o && o.image ? (
-                      <FoodImage src={o.image} alt="" containerClassName="size-14 shrink-0 rounded-xl" className="size-14 rounded-xl" />
-                    ) : (
-                      <div className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary">
-                        <Package className="size-5" />
+            <TabsContent value="orders" className="mt-0 space-y-3">
+              {[...remoteOrders, ...placedOrders.map((o) => ({
+                id: o.backendOrderId || o.id,
+                orderNumber: o.id,
+                status: o.stage,
+                total: o.total,
+                createdAt: o.createdAt,
+                items: o.items.map((i) => ({ name: i.name, quantity: i.qty, unitPrice: i.unitPrice })),
+              }))].length === 0 ? (
+                <EmptyState icon={Package} title="No orders yet" description="Your purchases will appear here." />
+              ) : (
+                [...remoteOrders].map((order) => (
+                  <div key={order.id} className="rounded-[24px] bg-card p-5 shadow-soft">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <p className="font-display font-semibold text-brown">{order.orderNumber}</p>
+                        <p className="text-xs text-muted-foreground">{new Date(order.createdAt).toLocaleString()}</p>
                       </div>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-brown">Order #{o.id}</p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {"items" in o && typeof o.items === "string" ? o.items : `${(o as { items: unknown[] }).items.length ?? 0} items`}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <Badge>{order.status}</Badge>
+                        <span className="font-semibold">{formatMoney(order.total)}</span>
+                      </div>
                     </div>
-                    <Badge variant={"status" in o && o.status === "cancelled" ? "destructive" : "success"}>
-                      {"status" in o ? o.status : "stage" in o ? o.stage : "delivered"}
-                    </Badge>
-                    <span className="font-semibold text-brown">{formatSAR(o.total)}</span>
-                    <Button size="sm" variant="outline" className="gap-1.5" onClick={() => toast.success("Items added to cart")}>
-                      <RotateCcw className="size-3.5" /> Reorder
+                    <ul className="mt-3 space-y-1 text-sm text-muted-foreground">
+                      {order.items?.map((item: any, idx: number) => (
+                        <li key={idx}>{item.quantity}× {item.name}</li>
+                      ))}
+                    </ul>
+                    <Button size="sm" variant="outline" className="mt-3 gap-1.5" onClick={() => requestRefund(order.id)}>
+                      <RotateCcw className="size-3.5" /> Request refund
                     </Button>
                   </div>
-                ))}
-              </div>
-            )}
-          </TabsContent>
+                ))
+              )}
+            </TabsContent>
 
-          <TabsContent value="addresses" className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="font-display text-xl font-semibold text-brown">Saved Addresses</h2>
-              <Button size="sm" className="gap-1.5" onClick={() => toast.success("Address form opened")}>
-                <Plus className="size-3.5" /> Add new
-              </Button>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {mockAddresses.map((a) => (
-                <div key={a.id} className="rounded-2xl border border-border/70 p-4">
-                  <p className="font-medium text-brown">
-                    {a.label} {a.isDefault && <Badge variant="soft" className="ms-1">Default</Badge>}
-                  </p>
-                  <p className="mt-1 text-sm text-muted-foreground">{a.line1}</p>
+            <TabsContent value="addresses" className="mt-0 space-y-4">
+              {addresses.map((addr) => (
+                <div key={addr.id} className="rounded-[24px] bg-card p-5 shadow-soft">
+                  <p className="font-semibold capitalize text-brown">{addr.label}</p>
+                  <p className="text-sm text-muted-foreground">{addr.line1}, {addr.city}, {addr.country}</p>
                 </div>
               ))}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="favorites" className="space-y-4">
-            <h2 className="font-display text-xl font-semibold text-brown">Favorites</h2>
-            {favoriteProducts.length === 0 ? (
-              <EmptyState
-                icon={Heart}
-                title="No favorites yet"
-                description="Tap the heart icon on any dish to save it here."
-                action={
-                  <Button asChild>
-                    <Link href="/shop">Browse Shop</Link>
-                  </Button>
-                }
-              />
-            ) : (
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                {favoriteProducts.map((p) => (
-                  <ProductCard key={p.id} product={p} variant="compact" />
-                ))}
+              <div className="rounded-[24px] bg-card p-5 shadow-soft">
+                <p className="font-display font-semibold text-brown">Add address</p>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <Input placeholder="Label" value={newAddress.label} onChange={(e) => setNewAddress((s) => ({ ...s, label: e.target.value }))} className="h-11 rounded-xl" />
+                  <Input placeholder="Phone" value={newAddress.phone} onChange={(e) => setNewAddress((s) => ({ ...s, phone: e.target.value }))} className="h-11 rounded-xl" />
+                  <Input placeholder="Street" value={newAddress.line1} onChange={(e) => setNewAddress((s) => ({ ...s, line1: e.target.value }))} className="h-11 rounded-xl sm:col-span-2" />
+                  <Input placeholder="City" value={newAddress.city} onChange={(e) => setNewAddress((s) => ({ ...s, city: e.target.value }))} className="h-11 rounded-xl" />
+                  <Input placeholder="Country" value={newAddress.country} onChange={(e) => setNewAddress((s) => ({ ...s, country: e.target.value }))} className="h-11 rounded-xl" />
+                </div>
+                <Button className="mt-3 gap-2" onClick={saveAddress}><Plus className="size-4" /> Save address</Button>
               </div>
-            )}
-          </TabsContent>
+            </TabsContent>
 
-          <TabsContent value="payments" className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="font-display text-xl font-semibold text-brown">Payment Methods</h2>
-              <Button size="sm" className="gap-1.5" onClick={() => toast.success("Card form opened")}>
-                <Plus className="size-3.5" /> Add card
-              </Button>
-            </div>
-            <div className="space-y-3">
-              {mockPaymentMethods.map((pm) => (
-                <div key={pm.id} className="flex items-center justify-between rounded-2xl border border-border/70 p-4">
-                  <div className="flex items-center gap-3">
-                    <CreditCard className="size-5 text-primary" />
-                    <span className="font-medium text-brown">{pm.label}</span>
+            <TabsContent value="favorites" className="mt-0">
+              {favoriteProducts.length ? (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{favoriteProducts.map((p) => <ProductCard key={p.id} product={p} />)}</div>
+              ) : (
+                <EmptyState icon={Heart} title="No favorites" description="Tap the heart on products to save them." />
+              )}
+            </TabsContent>
+
+            <TabsContent value="downloads" className="mt-0 space-y-3">
+              {downloads.length ? downloads.map((file, i) => (
+                <a key={i} href={file.url} target="_blank" rel="noreferrer" className="flex items-center justify-between rounded-[24px] bg-card p-4 shadow-soft hover:bg-secondary/40">
+                  <div>
+                    <p className="font-medium text-brown">{file.fileName}</p>
+                    <p className="text-xs text-muted-foreground">{file.productName} · {file.orderNumber}</p>
                   </div>
-                  {pm.isDefault && <Badge variant="soft">Default</Badge>}
+                  <Download className="size-4 text-primary" />
+                </a>
+              )) : <EmptyState icon={Download} title="No digital downloads" description="Purchased digital products will appear here." />}
+            </TabsContent>
+
+            <TabsContent value="payments" className="mt-0 rounded-[28px] bg-card p-6 shadow-soft">
+              <p className="text-sm text-muted-foreground">Payment methods are selected at checkout. Card/Apple Pay/Google Pay use the configured payment provider stub until live keys are added on the server.</p>
+            </TabsContent>
+
+            <TabsContent value="coupons" className="mt-0 space-y-3">
+              {coupons.map((c) => (
+                <div key={c.id} className="flex items-center justify-between rounded-[24px] bg-card p-4 shadow-soft">
+                  <div>
+                    <p className="font-semibold text-brown">{c.code}</p>
+                    <p className="text-xs text-muted-foreground">{c.discountType} · {c.discountValue}</p>
+                  </div>
+                  <Button size="sm" variant="outline" onClick={() => { navigator.clipboard?.writeText(c.code); toast.success("Copied"); }}>
+                    <Copy className="size-3.5" /> Copy
+                  </Button>
                 </div>
               ))}
-            </div>
-          </TabsContent>
+            </TabsContent>
 
-          <TabsContent value="coupons" className="space-y-4">
-            <h2 className="font-display text-xl font-semibold text-brown">Your Coupons</h2>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {mockCoupons.map((c) => (
-                <div key={c.id} className="rounded-2xl border border-dashed border-primary/40 bg-primary/5 p-4">
-                  <p className="font-display font-semibold text-primary">{c.code}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">{c.desc}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">Expires {c.expires}</p>
-                </div>
-              ))}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="loyalty" className="space-y-4">
-            <h2 className="font-display text-xl font-semibold text-brown">Halopeno Rewards</h2>
-            <div className="flex items-center gap-4 rounded-2xl bg-gradient-to-br from-accent to-[#516134] p-6 text-white">
-              <Award className="size-8" />
-              <div>
-                <p className="text-sm text-white/70">Current points</p>
-                <p className="font-display text-2xl font-bold">1,240</p>
+            <TabsContent value="loyalty" className="mt-0 space-y-4">
+              <div className="rounded-[28px] bg-primary p-6 text-primary-foreground">
+                <p className="text-sm text-white/70">Available points</p>
+                <p className="font-display text-4xl font-bold">{loyalty.points || customer.loyaltyPoints}</p>
               </div>
-              <Button variant="white" className="ms-auto" asChild>
-                <Link href="/loyalty">View Rewards</Link>
-              </Button>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="referral" className="space-y-4">
-            <h2 className="font-display text-xl font-semibold text-brown">Referral Program</h2>
-            <p className="text-sm text-muted-foreground">Share your code and you both earn 200 points.</p>
-            <button
-              onClick={() => {
-                navigator.clipboard?.writeText("SAFFRON-AMELIA10").catch(() => {});
-                toast.success("Referral code copied");
-              }}
-              className="flex w-full max-w-sm items-center justify-between rounded-full border border-dashed border-foreground/25 bg-secondary/40 px-4 py-2.5 text-sm font-medium"
-            >
-              SAFFRON-AMELIA10 <Copy className="size-4" />
-            </button>
-          </TabsContent>
-
-          <TabsContent value="notifications" className="space-y-3">
-            <h2 className="font-display text-xl font-semibold text-brown">Notifications</h2>
-            {mockNotifications.map((n) => (
-              <div key={n.id} className="flex items-center gap-3 rounded-2xl border border-border/70 p-4">
-                <Bell className="size-4 text-primary" />
-                <p className="flex-1 text-sm text-brown">{n.title}</p>
-                <span className="text-xs text-muted-foreground">{n.time}</span>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {[
+                  { title: "SAR 5 off", points: 300 },
+                  { title: "Free delivery", points: 400 },
+                  { title: "SAR 15 off", points: 900 },
+                ].map((reward) => (
+                  <div key={reward.title} className="flex items-center justify-between rounded-[24px] bg-card p-4 shadow-soft">
+                    <div>
+                      <p className="font-medium text-brown">{reward.title}</p>
+                      <p className="text-xs text-muted-foreground">{reward.points} points</p>
+                    </div>
+                    <Button size="sm" onClick={() => redeem(reward.points, reward.title)}>Redeem</Button>
+                  </div>
+                ))}
               </div>
-            ))}
-          </TabsContent>
+              <div className="space-y-2">
+                {loyalty.history.map((row) => (
+                  <div key={row.id} className="flex justify-between rounded-2xl bg-card px-4 py-3 text-sm shadow-soft">
+                    <span>{row.reason || row.type}</span>
+                    <span className={row.points >= 0 ? "text-olive-dark" : "text-destructive"}>{row.points >= 0 ? "+" : ""}{row.points}</span>
+                  </div>
+                ))}
+              </div>
+            </TabsContent>
 
-          <TabsContent value="support" className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="font-display text-xl font-semibold text-brown">Support Tickets</h2>
-              <Button size="sm" onClick={() => toast.success("Ticket form opened")}>
-                New Ticket
+            <TabsContent value="referral" className="mt-0 rounded-[28px] bg-card p-6 shadow-soft">
+              <p className="font-display text-xl font-semibold text-brown">Your referral code</p>
+              <p className="mt-2 text-sm text-muted-foreground">Share this code. Affiliate conversions are tracked when friends checkout with it.</p>
+              <Button className="mt-4 gap-2" variant="outline" onClick={() => { navigator.clipboard?.writeText(referralCode); toast.success("Copied"); }}>
+                <Copy className="size-4" /> {referralCode}
               </Button>
-            </div>
-            <div className="space-y-3">
-              {mockSupportTickets.map((t) => (
-                <div key={t.id} className="flex items-center justify-between rounded-2xl border border-border/70 p-4">
-                  <p className="text-sm text-brown">{t.subject}</p>
-                  <Badge variant={t.status === "open" ? "discount" : "success"}>{t.status}</Badge>
-                </div>
-              ))}
-            </div>
-          </TabsContent>
+            </TabsContent>
+
+            <TabsContent value="notifications" className="mt-0 rounded-[28px] bg-card p-6 shadow-soft">
+              <p className="text-sm text-muted-foreground">Order and loyalty updates will appear here as your account activity grows.</p>
+            </TabsContent>
+
+            <TabsContent value="support" className="mt-0 rounded-[28px] bg-card p-6 shadow-soft">
+              <p className="text-sm text-muted-foreground">Need help? Use the live chat bubble or <Link href="/contact" className="text-primary underline">contact form</Link>.</p>
+            </TabsContent>
           </div>
         </div>
       </Tabs>

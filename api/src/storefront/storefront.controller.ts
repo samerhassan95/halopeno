@@ -55,11 +55,13 @@ export class StorefrontController {
   @Get('site-settings')
   @ApiOperation({ summary: 'Public site SEO, currency, maintenance and payment display settings' })
   async getSiteSettings() {
-    const [system, payments, loyalty, currency] = await Promise.all([
+    const [system, payments, loyalty, currencySetting, defaultCurrency, languages] = await Promise.all([
       this.getSetting<Record<string, unknown>>('system', 'storefront'),
       this.getSetting<Record<string, unknown>>('storefront', 'payment_methods'),
       this.getSetting<Record<string, unknown>>('storefront', 'loyalty_program'),
       this.getSetting<Record<string, unknown>>('storefront', 'currency'),
+      this.prisma.currency.findFirst({ where: { isDefault: true, isActive: true } }),
+      this.prisma.language.findMany({ where: { isActive: true }, orderBy: [{ isDefault: 'desc' }, { code: 'asc' }] }),
     ]);
     return {
       value: {
@@ -70,8 +72,16 @@ export class StorefrontController {
         maintenanceMode: Boolean(system?.maintenanceMode),
         maintenanceMessage:
           system?.maintenanceMessage ?? 'We are updating the kitchen. Back shortly.',
-        currencyCode: (currency?.code as string) ?? 'SAR',
-        currencySymbol: (currency?.symbol as string) ?? 'SAR',
+        currencyCode:
+          (currencySetting?.code as string) ?? defaultCurrency?.code ?? 'SAR',
+        currencySymbol:
+          (currencySetting?.symbol as string) ?? defaultCurrency?.symbol ?? 'SAR',
+        languages: languages.map((lang) => ({
+          code: lang.code,
+          name: lang.name,
+          direction: lang.direction,
+          isDefault: lang.isDefault,
+        })),
         paymentMethods: Array.isArray(payments?.methods)
           ? payments!.methods
           : [

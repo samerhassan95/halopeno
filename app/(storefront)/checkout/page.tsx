@@ -29,6 +29,7 @@ import {
 } from "@/lib/storefront/store/cart-store";
 import { useCommerceConfigStore } from "@/lib/storefront/store/commerce-config-store";
 import { useOrderStore } from "@/lib/storefront/store/order-store";
+import { api } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 import { formatSAR } from "@/lib/storefront/format";
 import { toast } from "sonner";
@@ -82,9 +83,21 @@ export default function CheckoutPage() {
   const site = useCommerceConfigStore((s) => s.site);
   const refreshQuote = useCommerceConfigStore((s) => s.refreshQuote);
   const [submitting, setSubmitting] = React.useState(false);
+  const [pickupLocations, setPickupLocations] = React.useState<Array<{ id: string; name: string; address: string; city: string }>>([]);
+  const [pickupLocationId, setPickupLocationId] = React.useState<string>("");
 
   const paymentOptions = (site?.paymentMethods ?? []).filter((m) => m.enabled !== false);
   const defaultPayment = paymentOptions[0]?.id ?? "cod";
+
+  React.useEffect(() => {
+    api
+      .get<{ data: Array<{ id: string; name: string; address: string; city: string }> }>("/storefront/pickup-locations")
+      .then((res) => {
+        setPickupLocations(res.data ?? []);
+        if (res.data?.[0]) setPickupLocationId(res.data[0].id);
+      })
+      .catch(() => undefined);
+  }, []);
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -134,6 +147,17 @@ export default function CheckoutPage() {
     async (data) => {
       setSubmitting(true);
       try {
+        let paymentIntentId: string | undefined;
+        if (data.paymentMethod !== "cod") {
+          const intent = await api.post<{ intentId: string }>("/storefront/payments/intent", {
+            amount: total,
+            currency: site?.currencyCode || "SAR",
+            method: data.paymentMethod,
+          });
+          paymentIntentId = intent.intentId;
+        }
+
+        const selectedPickup = pickupLocations.find((p) => p.id === pickupLocationId);
         const orderId = await placeOrder({
           items,
           subtotal,
@@ -143,11 +167,18 @@ export default function CheckoutPage() {
           total,
           deliveryMethod: data.deliveryMethod,
           scheduledTime: data.deliveryTime === "scheduled" ? data.scheduledAt : undefined,
-          address: data.deliveryMethod === "pickup" ? "Pickup at Halopeno, King Fahd Rd, Riyadh" : resolvedAddress(),
+          address:
+            data.deliveryMethod === "pickup"
+              ? selectedPickup
+                ? `${selectedPickup.name} — ${selectedPickup.address}, ${selectedPickup.city}`
+                : "Pickup at Halopeno"
+              : resolvedAddress(),
           paymentMethod: data.paymentMethod,
           customerName: data.name,
           customerEmail: data.email,
           customerPhone: data.phone,
+          pickupLocationId: data.deliveryMethod === "pickup" ? pickupLocationId : undefined,
+          paymentIntentId,
         });
         clear();
         router.push(`/checkout/confirmation?order=${orderId}`);
@@ -283,12 +314,27 @@ export default function CheckoutPage() {
             </Section>
           ) : (
             <Section title="Pickup location">
-              <div className="flex items-center gap-3 rounded-2xl border border-primary bg-primary/5 p-4">
-                <Store className="size-5 text-primary" />
-                <div>
-                  <p className="font-medium text-brown">Halopeno Pickup Point</p>
-                  <p className="text-sm text-muted-foreground">12 Spice Market Rd, Springfield · Ready in 15-20 min</p>
-                </div>
+              <div className="space-y-3">
+                {(pickupLocations.length
+                  ? pickupLocations
+                  : [{ id: "default", name: "Halopeno Pickup Point", address: "King Fahd Rd", city: "Riyadh" }]
+                ).map((loc) => (
+                  <button
+                    key={loc.id}
+                    type="button"
+                    onClick={() => setPickupLocationId(loc.id)}
+                    className={cn(
+                      "flex w-full items-center gap-3 rounded-2xl border p-4 text-left",
+                      pickupLocationId === loc.id ? "border-primary bg-primary/5" : "border-border"
+                    )}
+                  >
+                    <Store className="size-5 text-primary" />
+                    <div>
+                      <p className="font-medium text-brown">{loc.name}</p>
+                      <p className="text-sm text-muted-foreground">{loc.address}, {loc.city}</p>
+                    </div>
+                  </button>
+                ))}
               </div>
             </Section>
           )}

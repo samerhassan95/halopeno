@@ -7,7 +7,12 @@ import { CatalogLoader } from "@/components/storefront/catalog-loader";
 import { CommerceConfigLoader } from "@/components/storefront/commerce-config-loader";
 import { MaintenanceGate } from "@/components/storefront/maintenance-gate";
 import { StorefrontPopupHost } from "@/components/storefront/popup-host";
+import { LiveChatWidget } from "@/components/storefront/live-chat-widget";
+import { AbandonedCartSync } from "@/components/storefront/abandoned-cart-sync";
+import { AffiliateTracker } from "@/components/storefront/affiliate-tracker";
+import { Suspense } from "react";
 import { StorefrontI18nProvider } from "@/lib/storefront/i18n/context";
+import { CustomerAuthProvider } from "@/lib/storefront/customer-auth";
 import { API_URL } from "@/lib/api/client";
 import { buildStorefrontStyleVars, type GlobalStylesConfig } from "@/lib/storefront/global-styles";
 import { getActiveTheme } from "@/lib/storefront/active-theme";
@@ -92,6 +97,7 @@ export default async function StorefrontLayout({ children }: { children: React.R
         `}</style>
       )}
       <StorefrontI18nProvider>
+        <CustomerAuthProvider>
         <CatalogLoader />
         <CommerceConfigLoader />
         <StorefrontHeader navLinks={headerMenu.length ? headerMenu : undefined} config={headerConfig} />
@@ -102,6 +108,10 @@ export default async function StorefrontLayout({ children }: { children: React.R
         <CartDrawer />
         <MobileBottomNav />
         <StorefrontPopupHost />
+        <LiveChatWidget />
+        <AbandonedCartSync />
+        <Suspense fallback={null}><AffiliateTracker /></Suspense>
+        </CustomerAuthProvider>
       </StorefrontI18nProvider>
     </div>
   );

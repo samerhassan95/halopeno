@@ -51,6 +51,10 @@ export function MenuPageClient() {
       if (q && !p.name.toLowerCase().includes(q) && !p.description.toLowerCase().includes(q)) return false;
       if (filters.categories.length && !filters.categories.includes(p.categorySlug)) return false;
       if (filters.brands.length && (!p.brandSlug || !filters.brands.includes(p.brandSlug))) return false;
+      if (filters.attributes.length) {
+        const haystack = `${p.name} ${p.description} ${p.tags.join(" ")} ${(p.variations || []).map((v) => v.label).join(" ")}`.toLowerCase();
+        if (!filters.attributes.some((attr) => haystack.includes(attr.toLowerCase()))) return false;
+      }
       if (p.price > filters.maxPrice) return false;
       if (filters.diets.length && !filters.diets.includes(p.diet)) return false;
       if (filters.spiceLevels.length && !filters.spiceLevels.includes(p.spiceLevel)) return false;

@@ -32,6 +32,7 @@ import { cn } from "@/lib/utils";
 import { formatSAR } from "@/lib/storefront/format";
 import { api } from "@/lib/api/client";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   useStorefrontI18n,
   localizedName,
@@ -399,6 +400,68 @@ export function ProductDetail({ product }: { product: Product }) {
       )}
 
       <ProductQuestions productId={product.id} />
+      <ProductReviewForm productId={product.id} />
+    </div>
+  );
+}
+
+function ProductReviewForm({ productId }: { productId: string }) {
+  const [rating, setRating] = React.useState(5);
+  const [title, setTitle] = React.useState("");
+  const [body, setBody] = React.useState("");
+  const [email, setEmail] = React.useState("");
+  const [name, setName] = React.useState("");
+  const [sending, setSending] = React.useState(false);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setSending(true);
+    try {
+      const token = typeof window !== "undefined" ? window.localStorage.getItem("halopeno-customer-token") : null;
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api/v1"}/storefront/reviews`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ productId, rating, title, body, email, name }),
+      });
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.message || "Failed");
+      toast.success("Review submitted for approval");
+      setTitle("");
+      setBody("");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not submit review");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <div className="mt-8 rounded-[28px] bg-card p-6 shadow-soft sm:p-8">
+      <h2 className="font-display text-2xl font-semibold text-brown">Write a review</h2>
+      <form onSubmit={submit} className="mt-4 grid gap-3 sm:grid-cols-2">
+        <Input placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} className="h-11 rounded-xl" />
+        <Input placeholder="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="h-11 rounded-xl" />
+        <div className="sm:col-span-2">
+          <Label className="text-xs">Rating</Label>
+          <input type="range" min={1} max={5} value={rating} onChange={(e) => setRating(Number(e.target.value))} className="mt-2 w-full accent-primary" />
+          <p className="text-xs text-muted-foreground">{rating} / 5</p>
+        </div>
+        <Input placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} className="h-11 rounded-xl sm:col-span-2" />
+        <textarea
+          required
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          placeholder="Share your experience"
+          rows={3}
+          className="rounded-2xl border border-input bg-background px-4 py-2.5 text-sm sm:col-span-2"
+        />
+        <Button type="submit" disabled={sending} className="sm:col-span-2 sm:w-fit">
+          {sending ? "Sending…" : "Submit review"}
+        </Button>
+      </form>
     </div>
   );
 }

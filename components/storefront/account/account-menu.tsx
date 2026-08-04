@@ -19,6 +19,7 @@ import { Button } from "@/components/storefront/ui/button";
 import { useOrderStore } from "@/lib/storefront/store/order-store";
 import { useWishlistStore } from "@/lib/storefront/store/wishlist-store";
 import { useStorefrontI18n } from "@/lib/storefront/i18n/context";
+import { useCustomerAuth } from "@/lib/storefront/customer-auth";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -71,17 +72,26 @@ function AccountMenuPanel({ onNavigate }: { onNavigate: () => void }) {
   const orders = useOrderStore((state) => state.orders);
   const favoriteCount = useWishlistStore((state) => state.productIds.length);
   const latestOrder = orders[0];
+  const { customer, logout } = useCustomerAuth();
+  const displayName = customer?.name || "Guest";
+  const displayEmail = customer?.email || "Sign in to sync your account";
+  const initials = displayName
+    .split(" ")
+    .map((p) => p[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
 
   return (
     <div className="text-start">
       <div className="flex items-center gap-3 border-b border-primary/10 pb-4">
         <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-base font-bold text-primary-foreground shadow-[0_8px_24px_-14px_rgba(18,75,45,0.9)]">
-          AF
+          {initials}
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-xs font-medium text-muted-foreground">{text.greeting}</p>
-          <p className="truncate font-display text-base font-semibold text-primary">Amelia Foster</p>
-          <p className="truncate text-xs text-muted-foreground">amelia@example.com</p>
+          <p className="truncate font-display text-base font-semibold text-primary">{displayName}</p>
+          <p className="truncate text-xs text-muted-foreground">{displayEmail}</p>
         </div>
         <ChevronRight className="size-4 text-muted-foreground rtl:rotate-180" />
       </div>
@@ -137,7 +147,9 @@ function AccountMenuPanel({ onNavigate }: { onNavigate: () => void }) {
 
       <div className="mt-3 flex items-center gap-2">
         <Button className="flex-1" size="sm" asChild>
-          <Link href="/account" onClick={onNavigate}>{text.viewAccount}</Link>
+          <Link href={customer ? "/account" : "/account/login"} onClick={onNavigate}>
+            {customer ? text.viewAccount : "Sign in"}
+          </Link>
         </Button>
         <Button
           size="icon-sm"
@@ -146,6 +158,7 @@ function AccountMenuPanel({ onNavigate }: { onNavigate: () => void }) {
           title={text.signOut}
           onClick={() => {
             onNavigate();
+            logout();
             toast.success(text.signOut);
             router.push("/");
           }}

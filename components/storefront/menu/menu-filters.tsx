@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useCatalogStore } from "@/lib/storefront/store/catalog-store";
 import { cn } from "@/lib/utils";
@@ -8,6 +9,7 @@ import type { DietType, SpiceLevel } from "@/types/storefront";
 export interface MenuFilterState {
   categories: string[];
   brands: string[];
+  attributes: string[];
   maxPrice: number;
   diets: DietType[];
   spiceLevels: SpiceLevel[];
@@ -18,6 +20,7 @@ export interface MenuFilterState {
 export const defaultFilters: MenuFilterState = {
   categories: [],
   brands: [],
+  attributes: [],
   maxPrice: 50,
   diets: [],
   spiceLevels: [],
@@ -51,6 +54,16 @@ export function MenuFilters({
 }) {
   const categories = useCatalogStore((s) => s.categories);
   const brands = useCatalogStore((s) => s.brands);
+  const [attributes, setAttributes] = React.useState<Array<{ id: string; name: string; values: Array<{ id: string; value: string; colorHex?: string | null }> }>>([]);
+
+  React.useEffect(() => {
+    import("@/lib/api/client").then(({ api }) => {
+      api
+        .get<{ data: typeof attributes }>("/storefront/attributes")
+        .then((res) => setAttributes(res.data ?? []))
+        .catch(() => undefined);
+    });
+  }, []);
 
   return (
     <div className="space-y-7">
@@ -86,6 +99,24 @@ export function MenuFilters({
           </div>
         </div>
       ) : null}
+
+      {attributes.map((attr) => (
+        <div key={attr.id}>
+          <p className="mb-3 font-display text-sm font-semibold text-brown">{attr.name}</p>
+          <div className="space-y-2">
+            {attr.values.map((value) => (
+              <label key={value.id} className="flex cursor-pointer items-center gap-2.5 text-sm text-foreground/80">
+                <Checkbox
+                  checked={filters.attributes.includes(value.value)}
+                  onCheckedChange={() => onChange({ ...filters, attributes: toggle(filters.attributes, value.value) })}
+                />
+                {value.colorHex ? <span className="size-3 rounded-full border" style={{ background: value.colorHex }} /> : null}
+                {value.value}
+              </label>
+            ))}
+          </div>
+        </div>
+      ))}
 
       <div>
         <p className="mb-3 font-display text-sm font-semibold text-brown">Price Range</p>

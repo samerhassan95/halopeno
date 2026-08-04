@@ -1,11 +1,12 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import { api } from "@/lib/api/client";
 import { SectionHeading } from "@/components/storefront/section-heading";
 import { FoodImage } from "@/components/storefront/food-image";
 import { Reveal } from "@/components/storefront/reveal";
+import { useCartStore } from "@/lib/storefront/store/cart-store";
+import { toast } from "sonner";
 
 interface FlashDeal {
   id: string;
@@ -38,6 +39,18 @@ function useCountdown(endsAt: string) {
 
 function DealCard({ deal }: { deal: FlashDeal }) {
   const left = useCountdown(deal.endsAt);
+
+  function shopDeal() {
+    useCartStore.setState({
+      coupon: {
+        code: `FLASH${Math.round(deal.discountValue)}`,
+        discountPct: Number(deal.discountValue) || 0,
+      },
+    });
+    toast.success(`Flash deal applied (${deal.discountValue}% off)`);
+    window.location.href = "/shop";
+  }
+
   return (
     <div className="overflow-hidden rounded-[28px] bg-card shadow-soft">
       <div className="aspect-[16/9] bg-secondary/40">
@@ -52,9 +65,9 @@ function DealCard({ deal }: { deal: FlashDeal }) {
       <div className="p-5">
         <p className="text-xs font-semibold uppercase tracking-wide text-accent">{deal.discountValue}% off · ends in {left}</p>
         <h3 className="mt-1 font-display text-xl font-semibold text-brown">{deal.title}</h3>
-        <Link href="/shop" className="mt-3 inline-block text-sm font-semibold text-primary hover:underline">
-          Shop the deal
-        </Link>
+        <button type="button" onClick={() => void shopDeal()} className="mt-3 inline-block text-sm font-semibold text-primary hover:underline">
+          Apply deal & shop
+        </button>
       </div>
     </div>
   );
