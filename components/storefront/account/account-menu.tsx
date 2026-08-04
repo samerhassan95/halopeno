@@ -32,49 +32,31 @@ const menuItems = [
   { key: "support", href: "/account?tab=support", icon: Headset },
 ] as const;
 
-const copy = {
-  en: {
-    greeting: "Welcome back",
-    profile: "Profile",
-    orders: "Orders",
-    favorites: "Favorites",
-    addresses: "Addresses",
-    rewards: "Rewards",
-    support: "Support",
-    recentOrder: "Latest order",
-    noOrders: "No orders yet",
-    track: "Track order",
-    viewAccount: "View account",
-    signOut: "Sign out",
-    account: "Account",
-  },
-  ar: {
-    greeting: "مرحباً بعودتك",
-    profile: "الملف الشخصي",
-    orders: "الطلبات",
-    favorites: "المفضلة",
-    addresses: "العناوين",
-    rewards: "المكافآت",
-    support: "الدعم",
-    recentOrder: "أحدث طلب",
-    noOrders: "لا توجد طلبات بعد",
-    track: "تتبع الطلب",
-    viewAccount: "عرض الحساب",
-    signOut: "تسجيل الخروج",
-    account: "الحساب",
-  },
-};
-
 function AccountMenuPanel({ onNavigate }: { onNavigate: () => void }) {
   const router = useRouter();
-  const { locale } = useStorefrontI18n();
-  const text = copy[locale];
+  const { t } = useStorefrontI18n();
   const orders = useOrderStore((state) => state.orders);
   const favoriteCount = useWishlistStore((state) => state.productIds.length);
   const latestOrder = orders[0];
   const { customer, logout } = useCustomerAuth();
-  const displayName = customer?.name || "Guest";
-  const displayEmail = customer?.email || "Sign in to sync your account";
+  const displayName = customer?.name || t("account.guest");
+  const displayEmail = customer?.email || t("account.signInSync");
+  const text = {
+    greeting: t("account.greeting"),
+    profile: t("account.profile"),
+    orders: t("account.orders"),
+    favorites: t("account.favorites"),
+    addresses: t("account.addresses"),
+    rewards: t("account.rewards"),
+    support: t("account.support"),
+    recentOrder: t("account.recentOrder"),
+    noOrders: t("account.noOrders"),
+    track: t("account.trackOrder"),
+    viewAccount: t("account.viewAccount"),
+    signOut: t("account.signOut"),
+    account: t("account.myAccount"),
+    signIn: t("account.signIn"),
+  };
   const initials = displayName
     .split(" ")
     .map((p) => p[0])
@@ -148,7 +130,7 @@ function AccountMenuPanel({ onNavigate }: { onNavigate: () => void }) {
       <div className="mt-3 flex items-center gap-2">
         <Button className="flex-1" size="sm" asChild>
           <Link href={customer ? "/account" : "/account/login"} onClick={onNavigate}>
-            {customer ? text.viewAccount : "Sign in"}
+            {customer ? text.viewAccount : text.signIn}
           </Link>
         </Button>
         <Button
@@ -173,8 +155,8 @@ function AccountMenuPanel({ onNavigate }: { onNavigate: () => void }) {
 export function AccountMenu({ mobile = false }: { mobile?: boolean }) {
   const pathname = usePathname();
   const [open, setOpen] = React.useState(false);
-  const { locale } = useStorefrontI18n();
-  const text = copy[locale];
+  const { t } = useStorefrontI18n();
+  const accountLabel = t("account.myAccount");
 
   if (mobile) {
     return (
@@ -185,10 +167,10 @@ export function AccountMenu({ mobile = false }: { mobile?: boolean }) {
               "flex flex-col items-center gap-0.5 rounded-xl px-3 py-1.5 text-[11px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-primary",
               pathname === "/account" ? "text-primary" : "text-muted-foreground"
             )}
-            aria-label={text.account}
+            aria-label={accountLabel}
           >
             <User className="size-5" />
-            {text.account}
+            {accountLabel}
           </button>
         </SheetTrigger>
         <SheetContent
@@ -211,7 +193,7 @@ export function AccountMenu({ mobile = false }: { mobile?: boolean }) {
           variant="ghost"
           size="icon"
           className={cn("hidden sm:inline-flex", open && "bg-secondary text-primary")}
-          aria-label={text.account}
+          aria-label={accountLabel}
         >
           <User className="size-[18px]" />
         </Button>

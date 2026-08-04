@@ -7,8 +7,15 @@ interface I18nContextValue {
   locale: Locale;
   setLocale: (locale: Locale) => void;
   toggleLocale: () => void;
-  t: (key: string) => string;
+  t: (key: string, vars?: Record<string, string | number>) => string;
   dir: "ltr" | "rtl";
+}
+
+function interpolate(template: string, vars?: Record<string, string | number>) {
+  if (!vars) return template;
+  return template.replace(/\{(\w+)\}/g, (_, name: string) =>
+    vars[name] !== undefined ? String(vars[name]) : `{${name}}`
+  );
 }
 
 const I18nContext = React.createContext<I18nContextValue | null>(null);
@@ -40,7 +47,17 @@ export function StorefrontI18nProvider({ children }: { children: React.ReactNode
   }, [locale, setLocale]);
 
   const t = React.useCallback(
-    (key: string) => dictionaries[locale][key] ?? dictionaries.en[key] ?? key,
+    (key: string, vars?: Record<string, string | number>) => {
+      const count = typeof vars?.count === "number" ? vars.count : undefined;
+      const pluralKey = count !== undefined && count !== 1 ? `${key}_plural` : key;
+      const raw =
+        dictionaries[locale][pluralKey] ??
+        dictionaries[locale][key] ??
+        dictionaries.en[pluralKey] ??
+        dictionaries.en[key] ??
+        key;
+      return interpolate(raw, vars);
+    },
     [locale]
   );
 

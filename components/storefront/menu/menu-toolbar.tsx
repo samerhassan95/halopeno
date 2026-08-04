@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "../ui/button";
 import { cn } from "@/lib/utils";
+import { useStorefrontI18n } from "@/lib/storefront/i18n/context";
 
 export type SortOption = "popularity" | "rating" | "price-asc" | "price-desc" | "newest";
 
@@ -27,10 +28,12 @@ export function MenuToolbar({
   resultCount: number;
   onOpenMobileFilters?: () => void;
 }) {
+  const { t, locale } = useStorefrontI18n();
+
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-center gap-2">
-        <Button variant="outline" size="icon" className="lg:hidden" onClick={onOpenMobileFilters} aria-label="Filters">
+        <Button variant="outline" size="icon" className="lg:hidden" onClick={onOpenMobileFilters} aria-label={t("shop.filters")}>
           <SlidersHorizontal className="size-4" />
         </Button>
         <div className="relative w-full sm:w-72">
@@ -38,11 +41,13 @@ export function MenuToolbar({
           <Input
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Search flavours..."
+            placeholder={t("shop.searchFlavors")}
             className="h-11 rounded-full ps-11"
           />
         </div>
-        <p className="hidden text-sm text-muted-foreground sm:block">{resultCount} items</p>
+        <p className="hidden text-sm text-muted-foreground sm:block">
+          {locale === "ar" ? `${resultCount} منتج` : `${resultCount} items`}
+        </p>
       </div>
 
       <div className="flex items-center gap-2">
@@ -51,11 +56,11 @@ export function MenuToolbar({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="popularity">Most Popular</SelectItem>
-            <SelectItem value="rating">Highest Rated</SelectItem>
-            <SelectItem value="price-asc">Price: Low to High</SelectItem>
-            <SelectItem value="price-desc">Price: High to Low</SelectItem>
-            <SelectItem value="newest">Newest</SelectItem>
+            <SelectItem value="popularity">{locale === "ar" ? "الأكثر شعبية" : "Most Popular"}</SelectItem>
+            <SelectItem value="rating">{locale === "ar" ? "الأعلى تقييمًا" : "Highest Rated"}</SelectItem>
+            <SelectItem value="price-asc">{locale === "ar" ? "السعر: من الأقل" : "Price: Low to High"}</SelectItem>
+            <SelectItem value="price-desc">{locale === "ar" ? "السعر: من الأعلى" : "Price: High to Low"}</SelectItem>
+            <SelectItem value="newest">{locale === "ar" ? "الأحدث" : "Newest"}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -63,14 +68,14 @@ export function MenuToolbar({
           <button
             onClick={() => onViewChange("grid")}
             className={cn("flex size-9 items-center justify-center rounded-full", view === "grid" && "bg-secondary")}
-            aria-label="Grid view"
+            aria-label={t("shop.grid")}
           >
             <LayoutGrid className="size-4" />
           </button>
           <button
             onClick={() => onViewChange("list")}
             className={cn("flex size-9 items-center justify-center rounded-full", view === "list" && "bg-secondary")}
-            aria-label="List view"
+            aria-label={t("shop.list")}
           >
             <List className="size-4" />
           </button>

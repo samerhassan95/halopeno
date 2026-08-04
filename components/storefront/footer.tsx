@@ -6,36 +6,6 @@ import { MapPin, Phone, Mail, Clock, Apple, PlayCircle, Camera, Users } from "lu
 import { Newsletter } from "./newsletter";
 import { useStorefrontI18n } from "@/lib/storefront/i18n/context";
 
-const menuLinks = [
-  { label: "Home", href: "/" },
-  { label: "Shop All Flavors", href: "/shop" },
-  { label: "Offers", href: "/offers" },
-  { label: "Blog", href: "/blog" },
-];
-
-const serviceLinks = [
-  { label: "Track Your Order", href: "/track" },
-  { label: "Contact Us", href: "/contact" },
-  { label: "About Us", href: "/about" },
-  { label: "Halopeno Rewards", href: "/loyalty" },
-  { label: "FAQs", href: "/faq" },
-];
-
-const accountLinks = [
-  { label: "My Account", href: "/account" },
-  { label: "Order History", href: "/account?tab=orders" },
-  { label: "Favorites", href: "/account?tab=favorites" },
-  { label: "Saved Addresses", href: "/account?tab=addresses" },
-  { label: "Coupons", href: "/account?tab=coupons" },
-];
-
-const legalLinks = [
-  { label: "Privacy Policy", href: "/pages/privacy" },
-  { label: "Terms & Conditions", href: "/pages/terms" },
-  { label: "Refund Policy", href: "/pages/refund" },
-  { label: "FAQs", href: "/faq" },
-];
-
 export type FooterNavLink = { label: string; href: string };
 export type StorefrontFooterConfig = {
   showNewsletter?: boolean;
@@ -52,7 +22,35 @@ export function StorefrontFooter({
   config?: StorefrontFooterConfig;
 } = {}) {
   const { t } = useStorefrontI18n();
-  const shopLinks = menuFromCms?.length ? menuFromCms : menuLinks;
+
+  const defaultShopLinks = [
+    { label: t("nav.home"), href: "/" },
+    { label: t("footer.shopAll"), href: "/shop" },
+    { label: t("nav.offers"), href: "/offers" },
+    { label: t("nav.blog"), href: "/blog" },
+  ];
+  const serviceLinks = [
+    { label: t("footer.track"), href: "/track/demo" },
+    { label: t("footer.contact"), href: "/contact" },
+    { label: t("footer.about"), href: "/about" },
+    { label: t("footer.rewards"), href: "/loyalty" },
+    { label: t("footer.faqs"), href: "/faq" },
+  ];
+  const accountLinks = [
+    { label: t("account.myAccount"), href: "/account" },
+    { label: t("footer.orderHistory"), href: "/account?tab=orders" },
+    { label: t("account.favorites"), href: "/account?tab=favorites" },
+    { label: t("footer.savedAddresses"), href: "/account?tab=addresses" },
+    { label: t("account.coupons"), href: "/account?tab=coupons" },
+  ];
+  const legalLinks = [
+    { label: t("footer.privacy"), href: "/pages/privacy" },
+    { label: t("footer.terms"), href: "/pages/terms" },
+    { label: t("footer.refund"), href: "/pages/refund" },
+    { label: t("footer.faqs"), href: "/faq" },
+  ];
+
+  const shopLinks = menuFromCms?.length ? menuFromCms : defaultShopLinks;
   const showNewsletter = config?.showNewsletter !== false;
   const showSocial = config?.showSocialLinks !== false;
   const showPayment = config?.showPaymentLogos !== false;
@@ -69,7 +67,7 @@ export function StorefrontFooter({
               <Link
                 href="/"
                 className="inline-flex rounded-2xl bg-[#f6efd9] px-4 py-2"
-                aria-label="Halopeno home"
+                aria-label="Halopeno"
               >
                 <Image
                   src="/images/brand/halopeno-wordmark-web.png"
@@ -81,7 +79,7 @@ export function StorefrontFooter({
                 />
               </Link>
               <p className="mt-4 max-w-sm text-sm leading-relaxed text-[#f6efd9]/70">
-                Small-batch pickled jalapeño flavors, crafted for real heat and real flavor. {t("footer.tagline")}
+                {t("footer.blurb")} {t("footer.tagline")}
               </p>
               {showSocial ? (
                 <div className="mt-5 flex items-center gap-3">
@@ -98,19 +96,19 @@ export function StorefrontFooter({
               ) : null}
               <div className="mt-5 flex flex-wrap gap-2.5">
                 <a href="#" className="flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-2 text-xs font-medium hover:bg-white/15">
-                  <Apple className="size-4" /> App Store
+                  <Apple className="size-4" /> {t("footer.appStore")}
                 </a>
                 <a href="#" className="flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-2 text-xs font-medium hover:bg-white/15">
-                  <PlayCircle className="size-4" /> Google Play
+                  <PlayCircle className="size-4" /> {t("footer.googlePlay")}
                 </a>
               </div>
             </div>
 
             <div>
-              <p className="mb-4 font-display text-sm font-semibold text-white">Shop</p>
+              <p className="mb-4 font-display text-sm font-semibold text-white">{t("footer.shop")}</p>
               <ul className="space-y-2.5 text-sm text-[#f6efd9]/70">
                 {shopLinks.map((l) => (
-                  <li key={l.label}>
+                  <li key={`${l.href}-${l.label}`}>
                     <Link href={l.href} className="transition-colors hover:text-primary">
                       {l.label}
                     </Link>
@@ -120,10 +118,10 @@ export function StorefrontFooter({
             </div>
 
             <div>
-              <p className="mb-4 font-display text-sm font-semibold text-white">Customer Service</p>
+              <p className="mb-4 font-display text-sm font-semibold text-white">{t("footer.service")}</p>
               <ul className="space-y-2.5 text-sm text-[#f6efd9]/70">
                 {serviceLinks.map((l) => (
-                  <li key={l.label}>
+                  <li key={l.href}>
                     <Link href={l.href} className="transition-colors hover:text-primary">
                       {l.label}
                     </Link>
@@ -133,10 +131,10 @@ export function StorefrontFooter({
             </div>
 
             <div>
-              <p className="mb-4 font-display text-sm font-semibold text-white">My Account</p>
+              <p className="mb-4 font-display text-sm font-semibold text-white">{t("footer.account")}</p>
               <ul className="space-y-2.5 text-sm text-[#f6efd9]/70">
                 {accountLinks.map((l) => (
-                  <li key={l.label}>
+                  <li key={l.href}>
                     <Link href={l.href} className="transition-colors hover:text-primary">
                       {l.label}
                     </Link>
@@ -149,7 +147,7 @@ export function StorefrontFooter({
           <div className="mx-auto mt-10 grid max-w-[1440px] gap-6 border-t border-white/10 pt-8 sm:grid-cols-3">
             <div className="flex items-start gap-3 text-sm text-[#f6efd9]/70">
               <MapPin className="mt-0.5 size-4 shrink-0 text-primary" />
-              Delivering across Riyadh, Jeddah &amp; Dammam
+              {t("footer.delivery")}
             </div>
             <div className="flex items-start gap-3 text-sm text-[#f6efd9]/70">
               <Phone className="mt-0.5 size-4 shrink-0 text-primary" />
@@ -157,13 +155,13 @@ export function StorefrontFooter({
                 +966 5 5019 2837
                 <br />
                 <span className="inline-flex items-center gap-1.5">
-                  <Mail className="size-3.5" /> hello@halopeno.example
+                  <Mail className="size-3.5" /> hello@halopeno.com
                 </span>
               </div>
             </div>
             <div className="flex items-start gap-3 text-sm text-[#f6efd9]/70">
               <Clock className="mt-0.5 size-4 shrink-0 text-primary" />
-              Customer support: Daily 9:00 AM - 9:00 PM
+              {t("footer.supportHours")}
             </div>
           </div>
 
@@ -171,12 +169,12 @@ export function StorefrontFooter({
             <p>{copyright}</p>
             <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
               {legalLinks.map((l) => (
-                <Link key={l.label} href={l.href} className="hover:text-primary">
+                <Link key={l.href} href={l.href} className="hover:text-primary">
                   {l.label}
                 </Link>
               ))}
               {showPayment ? (
-                <span className="text-[#f6efd9]/40">Visa / Mastercard / mada / Apple Pay / Cash on Delivery</span>
+                <span className="text-[#f6efd9]/40">Visa / Mastercard / mada / Apple Pay / COD</span>
               ) : null}
             </div>
           </div>

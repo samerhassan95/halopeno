@@ -29,29 +29,28 @@ import {
 } from "@/lib/storefront/store/cart-store";
 import { useCommerceConfigStore } from "@/lib/storefront/store/commerce-config-store";
 import { useOrderStore } from "@/lib/storefront/store/order-store";
+import { useStorefrontI18n } from "@/lib/storefront/i18n/context";
 import { api } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 import { formatSAR } from "@/lib/storefront/format";
 import { toast } from "sonner";
 
-const schema = z.object({
-  deliveryMethod: z.enum(["delivery", "pickup", "scheduled"]),
-  name: z.string().min(2, "Enter your full name"),
-  phone: z.string().min(7, "Enter a valid phone number"),
-  email: z.string().email("Enter a valid email"),
-  addressChoice: z.enum(["home", "work", "new"]),
-  newLine1: z.string().optional(),
-  newCity: z.string().optional(),
-  building: z.string().optional(),
-  floor: z.string().optional(),
-  apartment: z.string().optional(),
-  instructions: z.string().optional(),
-  deliveryTime: z.enum(["now", "scheduled"]),
-  scheduledAt: z.string().optional(),
-  paymentMethod: z.string().min(1),
-});
-
-type FormData = z.infer<typeof schema>;
+type FormData = {
+  deliveryMethod: "delivery" | "pickup" | "scheduled";
+  name: string;
+  phone: string;
+  email: string;
+  addressChoice: "home" | "work" | "new";
+  newLine1?: string;
+  newCity?: string;
+  building?: string;
+  floor?: string;
+  apartment?: string;
+  instructions?: string;
+  deliveryTime: "now" | "scheduled";
+  scheduledAt?: string;
+  paymentMethod: string;
+};
 
 const savedAddresses = {
   home: "42 Cedar Lane, Springfield",
@@ -77,6 +76,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 export default function CheckoutPage() {
   const router = useRouter();
+  const { t } = useStorefrontI18n();
   const { items, coupon, clear } = useCartStore();
   const { placeOrder } = useOrderStore();
   const quote = useCommerceConfigStore((s) => s.quote);
@@ -88,6 +88,27 @@ export default function CheckoutPage() {
 
   const paymentOptions = (site?.paymentMethods ?? []).filter((m) => m.enabled !== false);
   const defaultPayment = paymentOptions[0]?.id ?? "cod";
+
+  const schema = React.useMemo(
+    () =>
+      z.object({
+        deliveryMethod: z.enum(["delivery", "pickup", "scheduled"]),
+        name: z.string().min(2, t("checkout.err.name")),
+        phone: z.string().min(7, t("checkout.err.phone")),
+        email: z.string().email(t("checkout.err.email")),
+        addressChoice: z.enum(["home", "work", "new"]),
+        newLine1: z.string().optional(),
+        newCity: z.string().optional(),
+        building: z.string().optional(),
+        floor: z.string().optional(),
+        apartment: z.string().optional(),
+        instructions: z.string().optional(),
+        deliveryTime: z.enum(["now", "scheduled"]),
+        scheduledAt: z.string().optional(),
+        paymentMethod: z.string().min(1),
+      }),
+    [t]
+  );
 
   React.useEffect(() => {
     api
@@ -171,7 +192,7 @@ export default function CheckoutPage() {
             data.deliveryMethod === "pickup"
               ? selectedPickup
                 ? `${selectedPickup.name} — ${selectedPickup.address}, ${selectedPickup.city}`
-                : "Pickup at Halopeno"
+                : t("checkout.pickupAt")
               : resolvedAddress(),
           paymentMethod: data.paymentMethod,
           customerName: data.name,
@@ -181,15 +202,16 @@ export default function CheckoutPage() {
           paymentIntentId,
         });
         clear();
+        toast.success(t("checkout.success"));
         router.push(`/checkout/confirmation?order=${orderId}`);
       } catch {
-        toast.error("Couldn't place your order. Please try again.");
+        toast.error(t("checkout.failed"));
       } finally {
         setSubmitting(false);
       }
     },
     () => {
-      toast.error("Please check the highlighted fields");
+      toast.error(t("checkout.err.name"));
     }
   );
 
@@ -198,11 +220,11 @@ export default function CheckoutPage() {
       <div className="mx-auto max-w-3xl px-4 py-20 sm:px-6">
         <EmptyState
           icon={ShoppingBag}
-          title="Your cart is empty"
-          description="Add something from the menu before checking out."
+          title={t("checkout.emptyTitle")}
+          description={t("checkout.emptyHint")}
           action={
             <Button asChild>
-              <Link href="/shop">Browse Shop</Link>
+              <Link href="/shop">{t("cart.browseShop")}</Link>
             </Button>
           }
           className="rounded-[32px] bg-card py-20 shadow-soft"
@@ -211,26 +233,27 @@ export default function CheckoutPage() {
     );
   }
 
+  const methodOptions = [
+    { value: "delivery" as const, label: t("checkout.method.delivery"), desc: t("checkout.method.deliveryDesc"), icon: Bike },
+    { value: "pickup" as const, label: t("checkout.method.pickup"), desc: t("checkout.method.pickupDesc"), icon: Store },
+    { value: "scheduled" as const, label: t("checkout.method.scheduled"), desc: t("checkout.method.scheduledDesc"), icon: CalendarClock },
+  ];
+
   return (
     <div className="mx-auto max-w-[1200px] px-4 py-8 sm:px-6 lg:px-10">
-      <h1 className="font-display text-3xl font-semibold text-brown sm:text-4xl">Checkout</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Everything on one page. Review and place your order below.</p>
+      <h1 className="font-display text-3xl font-semibold text-brown sm:text-4xl">{t("checkout.title")}</h1>
 
       <form onSubmit={onSubmit} className="mt-8 grid gap-8 lg:grid-cols-[1fr_360px]">
         <div className="space-y-8 rounded-[28px] bg-card p-6 shadow-soft sm:p-8">
-          <Section title="How would you like your order?">
+          <Section title={t("checkout.howDelivery")}>
             <div className="grid gap-3 sm:grid-cols-3">
-              {[
-                { value: "delivery", label: "Delivery", desc: "Delivered to your door", icon: Bike },
-                { value: "pickup", label: "Pickup", desc: "Collect in-store", icon: Store },
-                { value: "scheduled", label: "Scheduled", desc: "Choose a later time", icon: CalendarClock },
-              ].map((opt) => (
+              {methodOptions.map((opt) => (
                 <button
                   key={opt.value}
                   type="button"
-                  onClick={() => setValue("deliveryMethod", opt.value as FormData["deliveryMethod"])}
+                  onClick={() => setValue("deliveryMethod", opt.value)}
                   className={cn(
-                    "rounded-2xl border p-5 text-left transition-colors",
+                    "rounded-2xl border p-5 text-start transition-colors",
                     values.deliveryMethod === opt.value ? "border-primary bg-primary/5" : "border-border hover:border-foreground/20"
                   )}
                 >
@@ -242,20 +265,20 @@ export default function CheckoutPage() {
             </div>
           </Section>
 
-          <Section title="Your information">
+          <Section title={t("checkout.yourInfo")}>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="name">Full name</Label>
+                <Label htmlFor="name">{t("checkout.name")}</Label>
                 <Input id="name" {...register("name")} className="h-11 rounded-xl" />
                 {formState.errors.name && <p className="text-xs text-destructive">{formState.errors.name.message}</p>}
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="phone">Phone number</Label>
-                <Input id="phone" {...register("phone")} className="h-11 rounded-xl" placeholder="+1 555 000 0000" />
+                <Label htmlFor="phone">{t("checkout.phone")}</Label>
+                <Input id="phone" {...register("phone")} className="h-11 rounded-xl" placeholder="+966 5X XXX XXXX" />
                 {formState.errors.phone && <p className="text-xs text-destructive">{formState.errors.phone.message}</p>}
               </div>
               <div className="space-y-1.5 sm:col-span-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t("checkout.email")}</Label>
                 <Input id="email" type="email" {...register("email")} className="h-11 rounded-xl" />
                 {formState.errors.email && <p className="text-xs text-destructive">{formState.errors.email.message}</p>}
               </div>
@@ -263,7 +286,7 @@ export default function CheckoutPage() {
           </Section>
 
           {values.deliveryMethod !== "pickup" ? (
-            <Section title="Delivery address">
+            <Section title={t("checkout.deliveryAddress")}>
               <div className="space-y-3">
                 {(["home", "work"] as const).map((key) => (
                   <label
@@ -276,7 +299,7 @@ export default function CheckoutPage() {
                     <input type="radio" className="sr-only" checked={values.addressChoice === key} onChange={() => setValue("addressChoice", key)} />
                     <MapPin className="size-5 text-primary" />
                     <div>
-                      <p className="font-medium capitalize text-brown">{key}</p>
+                      <p className="font-medium text-brown">{t(`checkout.address.${key}`)}</p>
                       <p className="text-sm text-muted-foreground">{savedAddresses[key]}</p>
                     </div>
                   </label>
@@ -289,21 +312,18 @@ export default function CheckoutPage() {
                 >
                   <input type="radio" className="sr-only" checked={values.addressChoice === "new"} onChange={() => setValue("addressChoice", "new")} />
                   <Plus className="size-5 text-primary" />
-                  <p className="font-medium text-brown">Add a new address</p>
+                  <p className="font-medium text-brown">{t("checkout.address.new")}</p>
                 </label>
 
                 {values.addressChoice === "new" && (
                   <div className="grid gap-3 rounded-2xl bg-secondary/40 p-4 sm:grid-cols-2">
-                    <div className="rounded-xl bg-white p-4 text-center text-xs text-muted-foreground sm:col-span-2">
-                      <MapPin className="mx-auto mb-1 size-5 text-primary" /> Map preview placeholder. Drag the pin to set your exact location.
-                    </div>
-                    <Input placeholder="Street address" {...register("newLine1")} className="h-11 rounded-xl sm:col-span-2" />
-                    <Input placeholder="City" {...register("newCity")} className="h-11 rounded-xl" />
-                    <Input placeholder="Building" {...register("building")} className="h-11 rounded-xl" />
-                    <Input placeholder="Floor" {...register("floor")} className="h-11 rounded-xl" />
-                    <Input placeholder="Apartment number" {...register("apartment")} className="h-11 rounded-xl" />
+                    <Input placeholder={t("checkout.line1")} {...register("newLine1")} className="h-11 rounded-xl sm:col-span-2" />
+                    <Input placeholder={t("checkout.city")} {...register("newCity")} className="h-11 rounded-xl" />
+                    <Input placeholder={t("checkout.building")} {...register("building")} className="h-11 rounded-xl" />
+                    <Input placeholder={t("checkout.floor")} {...register("floor")} className="h-11 rounded-xl" />
+                    <Input placeholder={t("checkout.apartment")} {...register("apartment")} className="h-11 rounded-xl" />
                     <textarea
-                      placeholder="Delivery instructions (optional)"
+                      placeholder={t("checkout.instructions")}
                       {...register("instructions")}
                       rows={2}
                       className="rounded-xl border border-input bg-white px-3 py-2 text-sm sm:col-span-2"
@@ -313,18 +333,18 @@ export default function CheckoutPage() {
               </div>
             </Section>
           ) : (
-            <Section title="Pickup location">
+            <Section title={t("checkout.pickupLocation")}>
               <div className="space-y-3">
                 {(pickupLocations.length
                   ? pickupLocations
-                  : [{ id: "default", name: "Halopeno Pickup Point", address: "King Fahd Rd", city: "Riyadh" }]
+                  : [{ id: "default", name: "Halopeno", address: "King Fahd Rd", city: "Riyadh" }]
                 ).map((loc) => (
                   <button
                     key={loc.id}
                     type="button"
                     onClick={() => setPickupLocationId(loc.id)}
                     className={cn(
-                      "flex w-full items-center gap-3 rounded-2xl border p-4 text-left",
+                      "flex w-full items-center gap-3 rounded-2xl border p-4 text-start",
                       pickupLocationId === loc.id ? "border-primary bg-primary/5" : "border-border"
                     )}
                   >
@@ -339,37 +359,35 @@ export default function CheckoutPage() {
             </Section>
           )}
 
-          <Section title={`When should we ${values.deliveryMethod === "pickup" ? "have it ready" : "deliver"}?`}>
+          <Section title={t("checkout.time.now")}>
             <div className="grid gap-3 sm:grid-cols-2">
               <button
                 type="button"
                 onClick={() => setValue("deliveryTime", "now")}
                 className={cn(
-                  "rounded-2xl border p-5 text-left",
+                  "rounded-2xl border p-5 text-start",
                   values.deliveryTime === "now" ? "border-primary bg-primary/5" : "border-border"
                 )}
               >
-                <p className="font-display font-semibold text-brown">As soon as possible</p>
-                <p className="text-sm text-muted-foreground">30-45 minutes</p>
+                <p className="font-display font-semibold text-brown">{t("checkout.time.now")}</p>
               </button>
               <button
                 type="button"
                 onClick={() => setValue("deliveryTime", "scheduled")}
                 className={cn(
-                  "rounded-2xl border p-5 text-left",
+                  "rounded-2xl border p-5 text-start",
                   values.deliveryTime === "scheduled" ? "border-primary bg-primary/5" : "border-border"
                 )}
               >
-                <p className="font-display font-semibold text-brown">Schedule for later</p>
-                <p className="text-sm text-muted-foreground">Pick a date and time</p>
+                <p className="font-display font-semibold text-brown">{t("checkout.time.scheduled")}</p>
               </button>
             </div>
             {values.deliveryTime === "scheduled" && (
-              <Input type="datetime-local" {...register("scheduledAt")} className="mt-4 h-11 max-w-xs rounded-xl" />
+              <Input type="datetime-local" {...register("scheduledAt")} className="mt-4 h-11 max-w-xs rounded-xl" aria-label={t("checkout.scheduledAt")} />
             )}
           </Section>
 
-          <Section title="Payment method">
+          <Section title={t("checkout.paymentMethod")}>
             <div className="grid gap-3 sm:grid-cols-2">
               {(paymentOptions.length
                 ? paymentOptions
@@ -387,7 +405,7 @@ export default function CheckoutPage() {
                     type="button"
                     onClick={() => setValue("paymentMethod", opt.id)}
                     className={cn(
-                      "flex items-center gap-3 rounded-2xl border p-4 text-left",
+                      "flex items-center gap-3 rounded-2xl border p-4 text-start",
                       values.paymentMethod === opt.id ? "border-primary bg-primary/5" : "border-border"
                     )}
                   >
@@ -398,13 +416,13 @@ export default function CheckoutPage() {
               })}
             </div>
             <p className="mt-4 flex items-center gap-1.5 text-xs text-muted-foreground">
-              <ShieldCheck className="size-3.5 text-accent" /> Payment methods are configured from the admin integrations settings.
+              <ShieldCheck className="size-3.5 text-accent" /> {t("checkout.secure")}
             </p>
           </Section>
         </div>
 
         <div className="h-fit space-y-3 rounded-[28px] bg-card p-6 shadow-soft lg:sticky lg:top-28">
-          <p className="font-display text-lg font-semibold text-brown">Order Summary</p>
+          <p className="font-display text-lg font-semibold text-brown">{t("checkout.orderSummary")}</p>
           {items.map((i) => (
             <div key={i.lineId} className="flex justify-between text-sm text-muted-foreground">
               <span className="truncate pe-2">
@@ -415,30 +433,30 @@ export default function CheckoutPage() {
           ))}
           <div className="space-y-1.5 border-t border-border pt-3 text-sm">
             <div className="flex justify-between text-muted-foreground">
-              <span>Subtotal</span>
+              <span>{t("cart.subtotal")}</span>
               <span>{formatSAR(subtotal)}</span>
             </div>
             {discount > 0 && (
               <div className="flex justify-between text-olive-dark">
-                <span>Discount</span>
+                <span>{t("cart.discount")}</span>
                 <span>-{formatSAR(discount)}</span>
               </div>
             )}
             <div className="flex justify-between text-muted-foreground">
-              <span>Delivery</span>
-              <span>{deliveryFee === 0 ? "Free" : formatSAR(deliveryFee)}</span>
+              <span>{t("cart.delivery")}</span>
+              <span>{deliveryFee === 0 ? t("cart.deliveryFree") : formatSAR(deliveryFee)}</span>
             </div>
             <div className="flex justify-between text-muted-foreground">
-              <span>Tax</span>
+              <span>{t("cart.tax")}</span>
               <span>{formatSAR(tax)}</span>
             </div>
             <div className="flex justify-between border-t border-border pt-2 font-display text-lg font-semibold text-brown">
-              <span>Total</span>
+              <span>{t("cart.total")}</span>
               <span>{formatSAR(total)}</span>
             </div>
           </div>
           <Button type="submit" size="lg" className="w-full" disabled={submitting}>
-            {submitting ? "Placing order…" : `Place Order · ${formatSAR(total)}`}
+            {submitting ? t("checkout.placing") : t("checkout.placeOrder", { total: formatSAR(total) })}
           </Button>
         </div>
       </form>

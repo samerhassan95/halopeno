@@ -20,18 +20,18 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useI18n } from "@/lib/i18n/context";
 
-const shortcuts = [
-  { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
-  { label: "All Orders", href: "/admin/orders/all", icon: ShoppingCart },
-  { label: "Sellers", href: "/admin/sellers", icon: Store },
-  { label: "Promotions", href: "/admin/promotions", icon: Percent },
-  { label: "Design Studio", href: "/admin/design-studio", icon: Palette },
-  { label: "Support", href: "/admin/support", icon: Headset },
-  { label: "Reports", href: "/admin/reports", icon: BarChart2 },
-];
-
 export function QuickMenu() {
   const { t } = useI18n();
+  const shortcuts = [
+    { label: t("header.tabs.dashboard"), href: "/admin", icon: LayoutDashboard },
+    { label: t("header.quickOrders"), href: "/admin/orders/all", icon: ShoppingCart },
+    { label: t("header.seller"), href: "/admin/sellers", icon: Store },
+    { label: t("header.quickPromotions"), href: "/admin/promotions", icon: Percent },
+    { label: t("header.tabs.designStudio"), href: "/admin/design-studio", icon: Palette },
+    { label: t("header.quickSupport"), href: "/admin/support", icon: Headset },
+    { label: t("header.quickReports"), href: "/admin/reports", icon: BarChart2 },
+  ];
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>

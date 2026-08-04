@@ -15,11 +15,13 @@ import {
 } from "@/lib/storefront/store/cart-store";
 import { useCommerceConfigStore } from "@/lib/storefront/store/commerce-config-store";
 import { useCatalogStore } from "@/lib/storefront/store/catalog-store";
+import { useStorefrontI18n } from "@/lib/storefront/i18n/context";
 import { cn } from "@/lib/utils";
 import { formatSAR } from "@/lib/storefront/format";
 import { toast } from "sonner";
 
 export default function CartPage() {
+  const { t } = useStorefrontI18n();
   const { items, removeItem, updateQty, coupon, applyCoupon, removeCoupon } = useCartStore();
   const products = useCatalogStore((s) => s.products);
   const quote = useCommerceConfigStore((s) => s.quote);
@@ -43,8 +45,8 @@ export default function CartPage() {
   async function handleApplyCoupon() {
     if (!code.trim()) return;
     const ok = await applyCoupon(code);
-    if (ok) toast.success(`Coupon ${code.toUpperCase()} applied`);
-    else toast.error("That coupon code isn't valid");
+    if (ok) toast.success(t("cart.couponApplied", { code: code.toUpperCase() }));
+    else toast.error(t("cart.couponInvalid"));
     setCode("");
   }
 
@@ -53,11 +55,11 @@ export default function CartPage() {
       <div className="mx-auto max-w-3xl px-4 py-20 sm:px-6">
         <EmptyState
           icon={ShoppingBag}
-          title="Your cart is empty"
-          description="Browse our shop and add a jar of your favorite flavor to get started."
+          title={t("cart.empty")}
+          description={t("cart.emptyHint")}
           action={
             <Button asChild>
-              <Link href="/shop">Browse Shop</Link>
+              <Link href="/shop">{t("cart.browseShop")}</Link>
             </Button>
           }
           className="rounded-[32px] bg-card py-20 shadow-soft"
@@ -68,8 +70,10 @@ export default function CartPage() {
 
   return (
     <div className="mx-auto max-w-[1440px] px-4 py-8 sm:px-6 lg:px-10">
-      <h1 className="font-display text-3xl font-semibold text-brown sm:text-4xl">Your Cart</h1>
-      <p className="mt-1 text-sm text-muted-foreground">{items.length} item{items.length > 1 ? "s" : ""} in your cart</p>
+      <h1 className="font-display text-3xl font-semibold text-brown sm:text-4xl">{t("cart.title")}</h1>
+      <p className="mt-1 text-sm text-muted-foreground">
+        {t(items.length === 1 ? "cart.itemsInCart" : "cart.itemsInCart_plural", { count: items.length })}
+      </p>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_380px]">
         <div className="space-y-4">
@@ -91,9 +95,9 @@ export default function CartPage() {
                     {item.addons.length > 0 && (
                       <p className="text-xs text-muted-foreground">+ {item.addons.map((a) => a.label).join(", ")}</p>
                     )}
-                    {item.note && <p className="mt-1 text-xs italic text-muted-foreground">"{item.note}"</p>}
+                    {item.note && <p className="mt-1 text-xs italic text-muted-foreground">&quot;{item.note}&quot;</p>}
                   </div>
-                  <button onClick={() => removeItem(item.lineId)} className="shrink-0 text-muted-foreground hover:text-destructive" aria-label="Remove">
+                  <button onClick={() => removeItem(item.lineId)} className="shrink-0 text-muted-foreground hover:text-destructive" aria-label={t("cart.remove")}>
                     <Trash2 className="size-4" />
                   </button>
                 </div>
@@ -108,7 +112,7 @@ export default function CartPage() {
           {recommended.length > 0 && (
             <div className="rounded-[24px] bg-card p-5 shadow-soft">
               <p className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-brown">
-                <Sparkles className="size-4 text-primary" /> You might also like
+                <Sparkles className="size-4 text-primary" /> {t("cart.youMightLike")}
               </p>
               <div className="scrollbar-thin flex gap-4 overflow-x-auto pb-1">
                 {recommended.map((p) => (
@@ -127,10 +131,10 @@ export default function CartPage() {
           <div>
             {remaining > 0 ? (
               <p className="mb-1.5 text-xs text-muted-foreground">
-                Add <span className="font-semibold text-brown">{formatSAR(remaining)}</span> more for free delivery
+                {t("cart.addMoreFree", { amount: formatSAR(remaining) })}
               </p>
             ) : (
-              <p className="mb-1.5 text-xs font-medium text-accent">🎉 You've unlocked free delivery!</p>
+              <p className="mb-1.5 text-xs font-medium text-accent">{t("cart.freeUnlocked")}</p>
             )}
             <div className="h-2 overflow-hidden rounded-full bg-secondary">
               <div className="h-full rounded-full bg-accent transition-all duration-500" style={{ width: `${progress}%` }} />
@@ -140,16 +144,16 @@ export default function CartPage() {
           <div className="flex gap-2">
             <div className="relative flex-1">
               <Tag className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Coupon code" className="h-10 rounded-full ps-9" />
+              <Input value={code} onChange={(e) => setCode(e.target.value)} placeholder={t("cart.couponPlaceholder")} className="h-10 rounded-full ps-9" />
             </div>
             <Button variant="outline" size="sm" className="h-10 shrink-0" onClick={handleApplyCoupon}>
-              Apply
+              {t("cart.apply")}
             </Button>
           </div>
           {coupon && (
             <div className="flex items-center justify-between rounded-xl bg-accent/10 px-3 py-2 text-sm">
               <span className="font-medium text-olive-dark">{coupon.code} (-{coupon.discountPct}%)</span>
-              <button onClick={removeCoupon} className="text-muted-foreground hover:text-destructive">
+              <button onClick={removeCoupon} className="text-muted-foreground hover:text-destructive" aria-label={t("cart.removeCoupon")}>
                 <X className="size-3.5" />
               </button>
             </div>
@@ -157,31 +161,31 @@ export default function CartPage() {
 
           <div className="space-y-1.5 border-t border-border pt-3 text-sm">
             <div className="flex justify-between text-muted-foreground">
-              <span>Subtotal</span>
+              <span>{t("cart.subtotal")}</span>
               <span>{formatSAR(subtotal)}</span>
             </div>
             {discount > 0 && (
               <div className="flex justify-between text-olive-dark">
-                <span>Discount</span>
+                <span>{t("cart.discount")}</span>
                 <span>-{formatSAR(discount)}</span>
               </div>
             )}
             <div className="flex justify-between text-muted-foreground">
-              <span>Delivery fee</span>
-              <span className={cn(deliveryFee === 0 && "text-accent")}>{deliveryFee === 0 ? "Free" : formatSAR(deliveryFee)}</span>
+              <span>{t("cart.delivery")}</span>
+              <span className={cn(deliveryFee === 0 && "text-accent")}>{deliveryFee === 0 ? t("cart.deliveryFree") : formatSAR(deliveryFee)}</span>
             </div>
             <div className="flex justify-between text-muted-foreground">
-              <span>Tax</span>
+              <span>{t("cart.tax")}</span>
               <span>{formatSAR(tax)}</span>
             </div>
             <div className="flex justify-between border-t border-border pt-2 font-display text-lg font-semibold text-brown">
-              <span>Total</span>
+              <span>{t("cart.total")}</span>
               <span>{formatSAR(total)}</span>
             </div>
           </div>
 
           <Button className="w-full" size="lg" asChild>
-            <Link href="/checkout">Proceed to Checkout</Link>
+            <Link href="/checkout">{t("cart.checkout")}</Link>
           </Button>
         </div>
       </div>

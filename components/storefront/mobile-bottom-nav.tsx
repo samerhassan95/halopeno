@@ -5,16 +5,18 @@ import { usePathname } from "next/navigation";
 import { Home, ShoppingBag, Search, PackageSearch } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AccountMenu } from "@/components/storefront/account/account-menu";
-
-const items = [
-  { label: "Home", href: "/", icon: Home },
-  { label: "Shop", href: "/shop", icon: ShoppingBag },
-  { label: "Search", href: "/shop?focus=search", icon: Search },
-  { label: "Orders", href: "/account?tab=orders", icon: PackageSearch },
-];
+import { useStorefrontI18n } from "@/lib/storefront/i18n/context";
 
 export function MobileBottomNav() {
   const pathname = usePathname();
+  const { t } = useStorefrontI18n();
+
+  const items = [
+    { label: t("nav.home"), href: "/", icon: Home },
+    { label: t("nav.shop"), href: "/shop", icon: ShoppingBag },
+    { label: t("nav.search"), href: "/shop?focus=search", icon: Search },
+    { label: t("nav.orders"), href: "/account?tab=orders", icon: PackageSearch },
+  ];
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur-md md:hidden">

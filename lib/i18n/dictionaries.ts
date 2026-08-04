@@ -32,7 +32,7 @@ export const dictionaries = {
       showingResults: "Showing {from}-{to} of {total}",
     },
     sidebar: {
-      brand: "Vantage",
+      brand: "Halopeno",
       tagline: "Commerce OS",
       searchMenu: "Search in menu",
       collapse: "Collapse sidebar",
@@ -66,6 +66,10 @@ export const dictionaries = {
       language: "Language",
       theme: "Theme",
       analytics: "Analytics",
+      quickOrders: "All Orders",
+      quickPromotions: "Promotions",
+      quickSupport: "Support",
+      quickReports: "Reports",
     },
     dashboard: {
       title: "Dashboard",
@@ -234,7 +238,7 @@ export const dictionaries = {
       showingResults: "عرض {from}-{to} من {total}",
     },
     sidebar: {
-      brand: "فانتيج",
+      brand: "هالوبينو",
       tagline: "نظام التجارة",
       searchMenu: "بحث في القائمة",
       collapse: "طي القائمة الجانبية",
@@ -268,6 +272,10 @@ export const dictionaries = {
       language: "اللغة",
       theme: "المظهر",
       analytics: "التحليلات",
+      quickOrders: "كل الطلبات",
+      quickPromotions: "العروض",
+      quickSupport: "الدعم",
+      quickReports: "التقارير",
     },
     dashboard: {
       title: "لوحة التحكم",

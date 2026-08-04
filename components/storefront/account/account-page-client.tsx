@@ -33,23 +33,25 @@ import { useCatalogStore } from "@/lib/storefront/store/catalog-store";
 import { useCustomerAuth } from "@/lib/storefront/customer-auth";
 import { api } from "@/lib/api/client";
 import { formatMoney } from "@/lib/storefront/format";
+import { useStorefrontI18n } from "@/lib/storefront/i18n/context";
 import { toast } from "sonner";
 
-const tabs = [
-  { value: "profile", label: "Profile", icon: User },
-  { value: "orders", label: "Orders", icon: Package },
-  { value: "addresses", label: "Addresses", icon: MapPin },
-  { value: "favorites", label: "Favorites", icon: Heart },
-  { value: "downloads", label: "Downloads", icon: Download },
-  { value: "payments", label: "Payments", icon: CreditCard },
-  { value: "coupons", label: "Coupons", icon: TicketPercent },
-  { value: "loyalty", label: "Loyalty", icon: Award },
-  { value: "referral", label: "Referral", icon: Users },
-  { value: "notifications", label: "Notifications", icon: Bell },
-  { value: "support", label: "Support", icon: Headset },
-];
+const tabDefs = [
+  { value: "profile", labelKey: "account.profile", icon: User },
+  { value: "orders", labelKey: "account.orders", icon: Package },
+  { value: "addresses", labelKey: "account.addresses", icon: MapPin },
+  { value: "favorites", labelKey: "account.favorites", icon: Heart },
+  { value: "downloads", labelKey: "account.downloads", icon: Download },
+  { value: "payments", labelKey: "account.payments", icon: CreditCard },
+  { value: "coupons", labelKey: "account.coupons", icon: TicketPercent },
+  { value: "loyalty", labelKey: "account.loyalty", icon: Award },
+  { value: "referral", labelKey: "account.referral", icon: Users },
+  { value: "notifications", labelKey: "account.notifications", icon: Bell },
+  { value: "support", labelKey: "account.support", icon: Headset },
+] as const;
 
 export function AccountPageClient() {
+  const { t } = useStorefrontI18n();
   const router = useRouter();
   const searchParams = useSearchParams();
   const tab = searchParams.get("tab") ?? "profile";
@@ -58,6 +60,7 @@ export function AccountPageClient() {
   const { orders: placedOrders } = useOrderStore();
   const products = useCatalogStore((s) => s.products);
   const favoriteProducts = products.filter((p) => productIds.includes(p.id));
+  const tabs = tabDefs.map((item) => ({ ...item, label: t(item.labelKey) }));
 
   const [remoteOrders, setRemoteOrders] = React.useState<any[]>([]);
   const [addresses, setAddresses] = React.useState<any[]>([]);
@@ -172,7 +175,7 @@ export function AccountPageClient() {
               ))}
             </TabsList>
             <Button variant="outline" className="mt-3 w-full gap-2" onClick={() => { logout(); router.push("/"); }}>
-              <LogOut className="size-4" /> Sign out
+              <LogOut className="size-4" /> {t("account.signOut")}
             </Button>
           </aside>
 

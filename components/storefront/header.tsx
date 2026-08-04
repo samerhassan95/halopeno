@@ -64,7 +64,7 @@ export function StorefrontHeader({
   const pathname = usePathname();
   const { items, openDrawer } = useCartStore();
   const count = cartItemCount(items);
-  const { locale, toggleLocale, t } = useStorefrontI18n();
+  const { locale, toggleLocale, t, dir } = useStorefrontI18n();
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
@@ -221,9 +221,9 @@ export function StorefrontHeader({
                 <Menu className="size-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="storefront-theme w-[340px] max-w-[88vw] bg-card">
+            <SheetContent side={dir === "rtl" ? "right" : "left"} className="storefront-theme w-[340px] max-w-[88vw] bg-card">
               <div className="flex h-full flex-col overflow-y-auto p-6 pt-16">
-                <Link href="/" onClick={() => setMobileOpen(false)} className="mb-7 inline-flex self-start rounded-xl bg-[#f6efd9] px-2.5 py-1.5" aria-label="Halopeno home">
+                <Link href="/" onClick={() => setMobileOpen(false)} className="mb-7 inline-flex self-start rounded-xl bg-[#f6efd9] px-2.5 py-1.5" aria-label="Halopeno">
                   <Image
                     src="/images/brand/halopeno-wordmark-web.png"
                     alt="Halopeno"
@@ -233,7 +233,7 @@ export function StorefrontHeader({
                     className="h-11 w-auto"
                   />
                 </Link>
-                <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">Browse</p>
+                <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">{t("nav.browse")}</p>
                 {navLinks.map((link) => (
                   <Link
                     key={`${link.href}-${link.label}`}
