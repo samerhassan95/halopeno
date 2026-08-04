@@ -211,6 +211,28 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
         error: null,
       });
 
+      // Remap persisted cart lines that still use fallback ids (e.g. p-halopeno-set).
+      try {
+        const { useCartStore } = await import("./cart-store");
+        const bySlug = new Map(products.map((p) => [p.slug, p] as const));
+        const cart = useCartStore.getState();
+        let changed = false;
+        const remapped = cart.items.map((item) => {
+          const live = bySlug.get(item.slug);
+          if (!live || live.id === item.productId) return item;
+          changed = true;
+          const next = { ...item, productId: live.id };
+          next.lineId = `${next.productId}-${next.variationId}-${next.spiceLevel}-${next.addons
+            .map((a) => a.id)
+            .sort()
+            .join(",")}`;
+          return next;
+        });
+        if (changed) useCartStore.setState({ items: remapped });
+      } catch {
+        // cart rematch is best-effort
+      }
+
       try {
         const reviewRes = await api.get<{ data: BackendReview[] }>("/storefront/reviews?limit=8");
         if (reviewRes.data.length) {

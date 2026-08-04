@@ -159,19 +159,46 @@ export class StorefrontService {
       total: number;
     }> = [];
     for (const raw of body.items) {
-      let productId = raw.productId as string | undefined;
-      if (!productId && raw.productSlug) {
-        const product = await this.prisma.product.findUnique({ where: { slug: raw.productSlug } });
-        productId = product?.id;
+      const requestedId = raw.productId ? String(raw.productId) : '';
+      const requestedSlug = raw.productSlug ? String(raw.productSlug) : '';
+      let product =
+        (requestedId
+          ? await this.prisma.product.findUnique({ where: { id: requestedId } })
+          : null) ??
+        (requestedSlug
+          ? await this.prisma.product.findUnique({ where: { slug: requestedSlug } })
+          : null);
+
+      // Fallback catalog IDs like "p-halopeno-set" are not DB ids — always resolve by slug.
+      if (!product && requestedSlug) {
+        product = await this.prisma.product.findFirst({
+          where: { slug: { equals: requestedSlug, mode: 'insensitive' }, status: 'PUBLISHED' },
+        });
       }
-      if (!productId) throw new BadRequestException(`Unknown product ${raw.productSlug || raw.name}`);
+      if (!product && raw.name) {
+        product = await this.prisma.product.findFirst({
+          where: { name: { equals: String(raw.name), mode: 'insensitive' }, status: 'PUBLISHED' },
+        });
+      }
+      if (!product) {
+        throw new BadRequestException(
+          `Unknown product ${requestedSlug || raw.name || requestedId}. Refresh the shop and try again.`,
+        );
+      }
+
+      let variantId: string | null = raw.variantId ? String(raw.variantId) : null;
+      if (variantId) {
+        const variant = await this.prisma.productVariant.findUnique({ where: { id: variantId } });
+        if (!variant || variant.productId !== product.id) variantId = null;
+      }
+
       const quantity = Number(raw.quantity) || 1;
       const unitPrice = Number(raw.unitPrice) || 0;
       items.push({
-        productId,
-        variantId: raw.variantId || null,
-        name: String(raw.name),
-        sku: String(raw.sku || raw.productSlug || productId),
+        productId: product.id,
+        variantId,
+        name: String(raw.name || product.name),
+        sku: String(raw.sku || product.sku || product.slug),
         quantity,
         unitPrice,
         total: unitPrice * quantity,
@@ -180,43 +207,54 @@ export class StorefrontService {
 
     const orderNumber = String(body.orderNumber || `SC${Date.now()}`);
     const paymentMethod = String(body.paymentMethod || 'cod');
-    const order = await this.prisma.order.create({
-      data: {
-        orderNumber,
-        customerId: customer.id,
-        source: 'WEBSITE',
-        channel: 'IN_HOUSE',
-        status: paymentMethod === 'cod' ? 'CONFIRMED' : 'PENDING',
-        currency: 'SAR',
-        subtotal: Number(body.subtotal) || 0,
-        discountTotal: Number(body.discountTotal) || 0,
-        taxTotal: Number(body.taxTotal) || 0,
-        shippingTotal: Number(body.shippingTotal) || 0,
-        total: Number(body.total) || 0,
-        shippingAddress: {
-          address: body.address,
-          deliveryMethod: body.deliveryMethod,
-          scheduledTime: body.scheduledTime,
-          pickupLocationId: body.pickupLocationId,
-        },
-        billingAddress: { name, email, phone: body.customerPhone },
-        customerNotes: body.customerNotes,
-        couponCode: body.couponCode,
-        referralSource: referralCode || body.referralCode || null,
-        items: { create: items },
-        payments: {
-          create: {
-            method: paymentMethod,
-            amount: Number(body.total) || 0,
-            currency: 'SAR',
-            status: 'PENDING',
-            gateway: this.config.get<string>('PAYMENT_PROVIDER') || 'stub',
-            transactionRef: body.paymentIntentId || null,
+    let order;
+    try {
+      order = await this.prisma.order.create({
+        data: {
+          orderNumber,
+          customerId: customer.id,
+          source: 'WEBSITE',
+          channel: 'IN_HOUSE',
+          status: paymentMethod === 'cod' ? 'CONFIRMED' : 'PENDING',
+          currency: 'SAR',
+          subtotal: Number(body.subtotal) || 0,
+          discountTotal: Number(body.discountTotal) || 0,
+          taxTotal: Number(body.taxTotal) || 0,
+          shippingTotal: Number(body.shippingTotal) || 0,
+          total: Number(body.total) || 0,
+          shippingAddress: {
+            address: body.address,
+            deliveryMethod: body.deliveryMethod,
+            scheduledTime: body.scheduledTime,
+            pickupLocationId: body.pickupLocationId,
+          },
+          billingAddress: { name, email, phone: body.customerPhone },
+          customerNotes: body.customerNotes,
+          couponCode: body.couponCode,
+          referralSource: referralCode || body.referralCode || null,
+          items: { create: items },
+          payments: {
+            create: {
+              method: paymentMethod,
+              amount: Number(body.total) || 0,
+              currency: 'SAR',
+              status: 'PENDING',
+              gateway: this.config.get<string>('PAYMENT_PROVIDER') || 'stub',
+              transactionRef: body.paymentIntentId || null,
+            },
           },
         },
-      },
-      include: { items: true, payments: true },
-    });
+        include: { items: true, payments: true },
+      });
+    } catch (err: any) {
+      if (err?.code === 'P2002') {
+        throw new BadRequestException('Order number already used. Please try again.');
+      }
+      if (err?.code === 'P2003') {
+        throw new BadRequestException('Invalid product in cart. Refresh the shop and try again.');
+      }
+      throw err;
+    }
 
     // Loyalty earn: 1 point per SAR
     const earned = Math.max(0, Math.floor(Number(order.total)));
