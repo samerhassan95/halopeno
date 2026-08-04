@@ -15,22 +15,20 @@ function buildSeries(days: number, seedBase: number): SalesPoint[] {
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date(now);
     d.setDate(now.getDate() - i);
-    const base = 4200 + Math.sin(i / 4) * 900 + rand() * 1400;
+    const base = 280 + Math.sin(i / 4) * 60 + rand() * 90;
     const revenue = Math.round(base);
-    const inHouseSales = Math.round(revenue * (0.42 + rand() * 0.08));
-    const sellerSales = revenue - inHouseSales;
-    const refunds = Math.round(revenue * (0.02 + rand() * 0.03));
-    const grossRevenue = revenue;
-    const netRevenue = grossRevenue - refunds;
-    const orders = Math.round(revenue / (32 + rand() * 10));
+    const inHouseSales = revenue;
+    const sellerSales = 0;
+    const refunds = Math.round(revenue * (0.01 + rand() * 0.02));
+    const orders = Math.max(1, Math.round(revenue / 55));
     points.push({
       date: d.toISOString(),
       revenue,
       orders,
       inHouseSales,
       sellerSales,
-      grossRevenue,
-      netRevenue,
+      grossRevenue: revenue,
+      netRevenue: revenue - refunds,
       refunds,
     });
   }
@@ -38,7 +36,7 @@ function buildSeries(days: number, seedBase: number): SalesPoint[] {
 }
 
 export const salesDaily = buildSeries(30, 11);
-export const salesWeekly = buildSeries(12, 22).map((p, i) => ({ ...p, date: p.date }));
+export const salesWeekly = buildSeries(12, 22);
 export const salesMonthly = buildSeries(12, 33);
 export const salesYearly = buildSeries(6, 44);
 
@@ -49,8 +47,8 @@ export const salesByRange = {
   yearly: salesYearly,
 };
 
-export const totalAllTimeSales = 4_286_940;
-export const salesThisMonth = 312_480;
-export const salesThisYear = 2_148_600;
-export const inHouseSalesTotal = 1_824_200;
-export const sellerSalesTotal = totalAllTimeSales - inHouseSalesTotal;
+export const totalAllTimeSales = 23_440;
+export const salesThisMonth = 4_860;
+export const salesThisYear = 23_440;
+export const inHouseSalesTotal = 23_440;
+export const sellerSalesTotal = 0;

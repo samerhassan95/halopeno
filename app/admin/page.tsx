@@ -65,7 +65,7 @@ export default function DashboardPage() {
           active={data ? data.kpis.totalProducts - data.kpis.outOfStockProducts : undefined}
           outOfStock={data?.kpis.outOfStockProducts}
         />
-        <SalesCard />
+        <SalesCard totalRevenue={data?.kpis.totalRevenue} netRevenue={data?.kpis.netRevenue} />
         <SellerCard
           total={data ? data.kpis.activeSellers + data.kpis.pendingSellerApprovals : undefined}
           approved={data?.kpis.activeSellers}

@@ -16,8 +16,8 @@ interface CustomerCardProps {
 
 export function CustomerCard({ total: totalProp, newThisMonth: newThisMonthProp }: CustomerCardProps = {}) {
   const { t } = useI18n();
-  const total = totalProp ?? 18420 + customers.length;
-  const newThisMonth = newThisMonthProp ?? 342;
+  const total = totalProp ?? customers.length;
+  const newThisMonth = newThisMonthProp ?? recentCustomers.length;
 
   return (
     <StatCard

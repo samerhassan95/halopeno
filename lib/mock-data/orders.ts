@@ -1,19 +1,15 @@
-import { faker } from "@faker-js/faker";
 import type { Order, OrderStatus, PaymentStatus, DeliveryStatus } from "@/types";
 import { customers } from "./customers";
-import { sellers } from "./sellers";
-
-faker.seed(404);
 
 const statusPool: OrderStatus[] = [
-  "pending", "pending",
-  "confirmed", "confirmed",
-  "processing", "processing", "processing",
-  "shipped", "shipped", "shipped",
-  "delivered", "delivered", "delivered", "delivered", "delivered", "delivered",
+  "pending",
+  "confirmed",
+  "processing",
+  "shipped",
+  "delivered",
+  "delivered",
+  "delivered",
   "cancelled",
-  "returned",
-  "refunded",
 ];
 
 const paymentByStatus: Record<OrderStatus, PaymentStatus> = {
@@ -38,21 +34,21 @@ const deliveryByStatus: Record<OrderStatus, DeliveryStatus> = {
   refunded: "delivered",
 };
 
-export const orders: Order[] = Array.from({ length: 120 }).map((_, i) => {
+const totals = [80, 40, 70, 42, 75, 35, 105, 42];
+
+export const orders: Order[] = Array.from({ length: 8 }).map((_, i) => {
   const status = statusPool[i % statusPool.length];
   const customer = customers[i % customers.length];
-  const useSeller = i % 2 === 0;
-  const seller = useSeller ? sellers[i % sellers.length] : null;
   return {
-    id: `#VG-${(20450 + i).toString()}`,
+    id: `#HAL-${(10020 + i).toString()}`,
     customerId: customer.id,
     customerName: customer.name,
     customerAvatar: customer.avatar,
-    sellerName: seller?.shopName ?? "In-house",
-    channel: seller ? "seller" : "in_house",
-    date: faker.date.recent({ days: 30 }).toISOString(),
-    productCount: faker.number.int({ min: 1, max: 6 }),
-    total: faker.number.int({ min: 24, max: 1450 }),
+    sellerName: "In-house",
+    channel: "in_house",
+    date: new Date(Date.now() - i * 36e5 * 18).toISOString(),
+    productCount: 1 + (i % 3),
+    total: totals[i],
     paymentStatus: paymentByStatus[status],
     deliveryStatus: deliveryByStatus[status],
     status,
@@ -68,14 +64,14 @@ export function ordersByStatus(status: OrderStatus) {
 }
 
 export const orderStatusCounts: Record<OrderStatus, number> = {
-  pending: 284,
-  confirmed: 412,
-  processing: 356,
-  shipped: 498,
-  delivered: 3120,
-  cancelled: 142,
-  returned: 68,
-  refunded: 54,
+  pending: 1,
+  confirmed: 1,
+  processing: 1,
+  shipped: 1,
+  delivered: 3,
+  cancelled: 1,
+  returned: 0,
+  refunded: 0,
 };
 
 export const totalOrderCount = Object.values(orderStatusCounts).reduce((a, b) => a + b, 0);

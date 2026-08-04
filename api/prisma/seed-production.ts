@@ -246,56 +246,66 @@ async function removeUnrelatedCatalog() {
 
   if (junkIds.length > 0) {
     console.log(`Removing ${junkIds.length} unrelated products...`);
-
-    // OrderItem has no onDelete cascade — clear references first
-    const junkOrderItems = await prisma.orderItem.findMany({
-      where: { productId: { in: junkIds } },
-      select: { orderId: true },
-    });
-    const affectedOrderIds = [...new Set(junkOrderItems.map((i) => i.orderId))];
-
     await prisma.orderItem.deleteMany({ where: { productId: { in: junkIds } } });
-
-    // Drop marketplace demo orders (VG-*) and any orders left with no items
-    await prisma.order.deleteMany({ where: { orderNumber: { startsWith: 'VG-' } } });
-
-    for (const orderId of affectedOrderIds) {
-      const remaining = await prisma.orderItem.count({ where: { orderId } });
-      if (remaining === 0) {
-        await prisma.refund.deleteMany({ where: { orderId } });
-        await prisma.payment.deleteMany({ where: { orderId } });
-        await prisma.order.delete({ where: { id: orderId } }).catch(() => undefined);
-      }
-    }
-
     await prisma.review.deleteMany({ where: { productId: { in: junkIds } } }).catch(() => undefined);
     await prisma.product.deleteMany({ where: { id: { in: junkIds } } });
   }
 
-  await prisma.order.updateMany({ data: { sellerId: null } });
+  // Wipe marketplace demo commerce (orders, customers, tickets, etc.)
+  console.log('Purging leftover demo orders, customers, and support data...');
+  await prisma.transaction.deleteMany({}).catch(() => undefined);
+  await prisma.refund.deleteMany({});
+  await prisma.payment.deleteMany({});
+  await prisma.invoice.deleteMany({}).catch(() => undefined);
+  await prisma.return.deleteMany({}).catch(() => undefined);
+  await prisma.shipment.deleteMany({}).catch(() => undefined);
+  await prisma.orderItem.deleteMany({});
+  await prisma.order.deleteMany({});
+  await prisma.supportTicket.deleteMany({});
+  await prisma.productQuestion.deleteMany({}).catch(() => undefined);
+  await prisma.review.deleteMany({});
+  await prisma.abandonedCart.deleteMany({}).catch(() => undefined);
+  await prisma.loyaltyTransaction.deleteMany({}).catch(() => undefined);
+  await prisma.customerAddress.deleteMany({});
+  await prisma.customer.deleteMany({});
+  await prisma.notification.deleteMany({});
+  await prisma.deliveryAgent.deleteMany({});
+
+  await prisma.order.updateMany({ data: { sellerId: null } }).catch(() => undefined);
   await prisma.product.updateMany({ data: { sellerId: null } });
   await prisma.seller.deleteMany({});
+  await prisma.commission.deleteMany({}).catch(() => undefined);
+  await prisma.payout.deleteMany({}).catch(() => undefined);
 
   await prisma.brand.deleteMany({ where: { slug: { not: 'halopeno' } } });
   await prisma.category.deleteMany({ where: { slug: { notIn: ['flavors', 'sets'] } } });
 
-  // Old marketplace coupons that are not Halopeno offers
   await prisma.coupon.deleteMany({
     where: {
       code: { in: ['WELCOME10', 'FREESHIP', 'FLASH25', 'SAVE20'] },
     },
   });
 
-  await prisma.deliveryAgent.deleteMany({});
-  await prisma.notification.deleteMany({
+  // Size/Color marketplace attributes from the old seed
+  await prisma.attributeValue.deleteMany({});
+  await prisma.attribute.deleteMany({});
+
+  // Demo staff accounts (keep Halopeno admins)
+  await prisma.user.deleteMany({
     where: {
-      OR: [
-        { body: { contains: 'Trail Running' } },
-        { body: { contains: 'Coastal Goods' } },
-        { title: { contains: 'Seller verification' } },
-      ],
+      email: { notIn: ['admin@halopeno.com', 'admin@vantage.dev'] },
     },
   });
+
+  // Remove old US/EU demo warehouses if empty
+  const demoWarehouses = await prisma.warehouse.findMany({
+    where: { code: { in: ['WH-CTRL', 'WH-WEST', 'WH-EU'] } },
+    select: { id: true },
+  });
+  for (const wh of demoWarehouses) {
+    await prisma.stockItem.deleteMany({ where: { warehouseId: wh.id } });
+    await prisma.warehouse.delete({ where: { id: wh.id } }).catch(() => undefined);
+  }
 }
 
 async function upsertCatalog(storeId: string) {
@@ -359,16 +369,6 @@ async function upsertCatalog(storeId: string) {
       isActive: true,
     },
   });
-
-  // Remove old US/EU demo warehouses if empty
-  const demoWarehouses = await prisma.warehouse.findMany({
-    where: { code: { in: ['WH-CTRL', 'WH-WEST', 'WH-EU'] } },
-    select: { id: true },
-  });
-  for (const wh of demoWarehouses) {
-    await prisma.stockItem.deleteMany({ where: { warehouseId: wh.id } });
-    await prisma.warehouse.delete({ where: { id: wh.id } }).catch(() => undefined);
-  }
 
   for (const item of catalog) {
     const product = await prisma.product.upsert({

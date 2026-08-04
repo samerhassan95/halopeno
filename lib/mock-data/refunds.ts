@@ -1,30 +1,24 @@
-import { faker } from "@faker-js/faker";
 import type { Refund } from "@/types";
 import { customers } from "./customers";
 import { orders } from "./orders";
 
-faker.seed(505);
-
 const reasons = [
-  "Item damaged in transit",
-  "Wrong item delivered",
+  "Jar cracked in transit",
+  "Wrong flavor delivered",
   "Changed my mind",
-  "Product not as described",
-  "Late delivery",
-  "Defective product",
 ];
 
-export const refunds: Refund[] = Array.from({ length: 12 }).map((_, i) => {
-  const customer = customers[(i * 3) % customers.length];
-  const order = orders[(i * 5) % orders.length];
+export const refunds: Refund[] = Array.from({ length: 3 }).map((_, i) => {
+  const customer = customers[i % customers.length];
+  const order = orders[i % orders.length];
   return {
     id: `RF-${(3400 + i).toString()}`,
     orderId: order.id,
     customerName: customer.name,
-    amount: faker.number.int({ min: 18, max: 620 }),
+    amount: [40, 35, 42][i],
     reason: reasons[i % reasons.length],
-    date: faker.date.recent({ days: 14 }).toISOString(),
-    status: i % 4 === 0 ? "approved" : i % 4 === 1 ? "rejected" : "pending",
+    date: new Date(Date.now() - i * 86400000 * 2).toISOString(),
+    status: i === 0 ? "pending" : i === 1 ? "approved" : "rejected",
   };
 });
 

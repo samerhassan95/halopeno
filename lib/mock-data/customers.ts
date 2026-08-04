@@ -1,25 +1,47 @@
-import { faker } from "@faker-js/faker";
 import type { Customer } from "@/types";
 
-faker.seed(202);
-
-export const customers: Customer[] = Array.from({ length: 40 }).map((_, i) => {
-  const name = faker.person.fullName();
-  return {
-    id: `cust-${i + 1}`,
-    name,
-    email: faker.internet.email({ firstName: name.split(" ")[0] }).toLowerCase(),
-    avatar: name
-      .split(" ")
-      .map((p) => p[0])
-      .slice(0, 2)
-      .join(""),
-    joinedAt: faker.date.recent({ days: 120 }).toISOString(),
-    totalOrders: faker.number.int({ min: 1, max: 48 }),
-    totalSpent: faker.number.int({ min: 40, max: 9200 }),
-    location: faker.location.city() + ", " + faker.location.country(),
-  };
-});
+export const customers: Customer[] = [
+  {
+    id: "cust-1",
+    name: "Layla Alharbi",
+    email: "layla.alharbi@example.com",
+    avatar: "LA",
+    joinedAt: "2026-07-12T10:00:00.000Z",
+    totalOrders: 3,
+    totalSpent: 150,
+    location: "Riyadh, Saudi Arabia",
+  },
+  {
+    id: "cust-2",
+    name: "Omar Nasser",
+    email: "omar.nasser@example.com",
+    avatar: "ON",
+    joinedAt: "2026-07-08T10:00:00.000Z",
+    totalOrders: 2,
+    totalSpent: 80,
+    location: "Jeddah, Saudi Arabia",
+  },
+  {
+    id: "cust-3",
+    name: "Hana Saleh",
+    email: "hana.saleh@example.com",
+    avatar: "HS",
+    joinedAt: "2026-06-28T10:00:00.000Z",
+    totalOrders: 1,
+    totalSpent: 42,
+    location: "Madinah, Saudi Arabia",
+  },
+  {
+    id: "cust-4",
+    name: "Amelia Foster",
+    email: "amelia.foster@example.com",
+    avatar: "AF",
+    joinedAt: "2026-06-20T10:00:00.000Z",
+    totalOrders: 4,
+    totalSpent: 210,
+    location: "Riyadh, Saudi Arabia",
+  },
+];
 
 export const recentCustomers = [...customers]
   .sort((a, b) => new Date(b.joinedAt).getTime() - new Date(a.joinedAt).getTime())
