@@ -1,12 +1,19 @@
+"use client";
+
+import * as React from "react";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { SectionHeading } from "../section-heading";
 import { OfferCard } from "../offer-card";
 import { FoodImage } from "../food-image";
 import { Button } from "../ui/button";
-import { offers } from "@/lib/storefront/data/offers";
+import { offers as fallbackOffers } from "@/lib/storefront/data/offers";
 import { Reveal } from "../reveal";
 import { cmsBool, cmsText, type SectionCmsData } from "@/lib/storefront/section-cms";
+import { api } from "@/lib/api/client";
+import type { Offer } from "@/types/storefront";
+
+const COLORS: Offer["color"][] = ["orange", "olive", "brown"];
 
 export function OffersSection({ data }: { data?: SectionCmsData } = {}) {
   const title = cmsText(data, "title", "Special Offers");
@@ -28,6 +35,66 @@ export function OffersSection({ data }: { data?: SectionCmsData } = {}) {
       (typeof data?.title === "string" && data.title.trim()) ||
       (typeof data?.ctaText === "string" && data.ctaText.trim())
   );
+  const [offers, setOffers] = React.useState<Offer[]>(fallbackOffers);
+
+  React.useEffect(() => {
+    if (hasCmsPromo) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const [promoRes, couponRes] = await Promise.all([
+          api.get<{ data: Array<{ id: string; name: string; type: string; discountValue: string | number | null; endsAt: string | null }> }>(
+            "/storefront/promotions"
+          ),
+          api.get<{ data: Array<{ id: string; code: string; discountType: string; discountValue: number; expiresAt: string | null }> }>(
+            "/storefront/coupons"
+          ),
+        ]);
+        const fromPromotions: Offer[] = (promoRes.data ?? []).map((promo, index) => {
+          const value = promo.discountValue == null ? null : Number(promo.discountValue);
+          return {
+            id: promo.id,
+            title: promo.name,
+            description: "Active promotion from the admin marketing center.",
+            image: "",
+            discountLabel:
+              value == null
+                ? promo.type.toUpperCase()
+                : promo.type.toLowerCase().includes("percent")
+                  ? `${value}% OFF`
+                  : `SAR ${value} OFF`,
+            code: promo.type.replace(/\s+/g, "").toUpperCase().slice(0, 12),
+            expiresAt: promo.endsAt ?? new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10),
+            color: COLORS[index % COLORS.length],
+          };
+        });
+        const fromCoupons: Offer[] = (couponRes.data ?? []).map((coupon, index) => ({
+          id: coupon.id,
+          title: `Coupon ${coupon.code}`,
+          description: "Use this code at checkout to unlock your discount.",
+          image: "",
+          discountLabel:
+            coupon.discountType === "PERCENTAGE"
+              ? `${coupon.discountValue}% OFF`
+              : coupon.discountType === "FREE_SHIPPING"
+                ? "FREE DELIVERY"
+                : `SAR ${coupon.discountValue} OFF`,
+          code: coupon.code,
+          expiresAt: coupon.expiresAt
+            ? coupon.expiresAt.slice(0, 10)
+            : new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10),
+          color: COLORS[(index + 1) % COLORS.length],
+        }));
+        const merged = [...fromPromotions, ...fromCoupons];
+        if (!cancelled && merged.length) setOffers(merged);
+      } catch {
+        // keep fallback
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [hasCmsPromo]);
 
   return (
     <section className="mx-auto max-w-[1440px] px-4 py-16 sm:px-6 lg:px-10">

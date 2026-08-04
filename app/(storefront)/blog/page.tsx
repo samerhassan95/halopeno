@@ -1,14 +1,16 @@
 import Link from "next/link";
 import { FoodImage } from "@/components/storefront/food-image";
 import { SectionHeading } from "@/components/storefront/section-heading";
-import { blogPosts } from "@/lib/storefront/data/blog";
+import { fetchStorefrontBlogPosts } from "@/lib/storefront/fetch-content";
 
-export default function BlogPage() {
+export default async function BlogPage() {
+  const posts = await fetchStorefrontBlogPosts();
+
   return (
     <div className="mx-auto max-w-[1200px] px-4 py-10 sm:px-6 lg:px-10">
       <SectionHeading eyebrow="Stories & recipes" title="From Our Kitchen Journal" />
       <div className="mt-10 grid gap-6 sm:grid-cols-2">
-        {blogPosts.map((post) => (
+        {posts.map((post) => (
           <Link key={post.id} href={`/blog/${post.slug}`} className="group block overflow-hidden rounded-[28px] bg-card shadow-soft">
             <div className="aspect-[16/9] overflow-hidden">
               <FoodImage

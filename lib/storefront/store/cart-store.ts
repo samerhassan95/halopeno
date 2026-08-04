@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { SpiceLevel } from "@/types/storefront";
+import { api } from "@/lib/api/client";
 
 export interface CartAddon {
   id: string;
@@ -29,6 +30,7 @@ export interface CartItem {
 interface CouponState {
   code: string;
   discountPct: number;
+  freeShipping?: boolean;
 }
 
 interface CartState {
@@ -39,21 +41,11 @@ interface CartState {
   removeItem: (lineId: string) => void;
   updateQty: (lineId: string, qty: number) => void;
   clear: () => void;
-  applyCoupon: (code: string) => boolean;
+  applyCoupon: (code: string) => Promise<boolean>;
   removeCoupon: () => void;
   openDrawer: () => void;
   closeDrawer: () => void;
 }
-
-const VALID_COUPONS: Record<string, number> = {
-  FAMILY25: 25,
-  LUNCHFIX: 10,
-  WEEKENDBIR: 15,
-  APPBOGO: 10,
-  FREESHIP25: 0,
-  COMBO2: 12,
-  WELCOME10: 10,
-};
 
 export const useCartStore = create<CartState>()(
   persist(
@@ -87,13 +79,27 @@ export const useCartStore = create<CartState>()(
 
       clear: () => set({ items: [], coupon: null }),
 
-      applyCoupon: (code) => {
+      applyCoupon: async (code) => {
         const upper = code.trim().toUpperCase();
-        if (upper in VALID_COUPONS) {
-          set({ coupon: { code: upper, discountPct: VALID_COUPONS[upper] } });
+        if (!upper) return false;
+        const subtotal = cartSubtotal(get().items);
+        try {
+          const res = await api.post<{
+            valid: boolean;
+            coupon?: { code: string; discountPct: number; freeShipping?: boolean };
+          }>("/storefront/coupons/validate", { code: upper, subtotal });
+          if (!res.valid || !res.coupon) return false;
+          set({
+            coupon: {
+              code: res.coupon.code,
+              discountPct: res.coupon.discountPct,
+              freeShipping: res.coupon.freeShipping,
+            },
+          });
           return true;
+        } catch {
+          return false;
         }
-        return false;
       },
 
       removeCoupon: () => set({ coupon: null }),
@@ -118,7 +124,7 @@ export const useCartStore = create<CartState>()(
 );
 
 export function lineTotal(item: CartItem) {
-  return (item.unitPrice + item.addons.reduce((s, a) => s + a.price, 0)) * item.qty;
+  return (item.unitPrice + item.addons.reduce((s, a) => a.price + s, 0)) * item.qty;
 }
 
 export function cartSubtotal(items: CartItem[]) {

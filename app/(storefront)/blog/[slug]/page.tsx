@@ -1,18 +1,18 @@
-"use client";
-
-import { use } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { FoodImage } from "@/components/storefront/food-image";
-import { getPostBySlug, blogPosts } from "@/lib/storefront/data/blog";
+import { fetchStorefrontBlogPost, fetchStorefrontBlogPosts } from "@/lib/storefront/fetch-content";
 
-export default function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = use(params);
-  const post = getPostBySlug(slug);
+export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const [post, allPosts] = await Promise.all([
+    fetchStorefrontBlogPost(slug),
+    fetchStorefrontBlogPosts(12),
+  ]);
   if (!post) notFound();
 
-  const more = blogPosts.filter((p) => p.slug !== slug).slice(0, 3);
+  const more = allPosts.filter((p) => p.slug !== slug).slice(0, 3);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
@@ -34,7 +34,10 @@ export default function BlogPostPage({ params }: { params: Promise<{ slug: strin
         <FoodImage src={post.image} alt={post.title} containerClassName="size-full" className="size-full" />
       </div>
 
-      <p className="mt-8 text-[15px] leading-loose text-foreground/80">{post.content}</p>
+      <div
+        className="mt-8 text-[15px] leading-loose text-foreground/80 prose prose-p:my-3 max-w-none"
+        dangerouslySetInnerHTML={{ __html: post.content.includes("<") ? post.content : post.content.replace(/\n/g, "<br/>") }}
+      />
 
       {more.length > 0 && (
         <div className="mt-14">

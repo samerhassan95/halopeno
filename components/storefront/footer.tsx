@@ -35,12 +35,32 @@ const legalLinks = [
   { label: "Refund Policy", href: "/contact" },
 ];
 
-export function StorefrontFooter() {
+export type FooterNavLink = { label: string; href: string };
+export type StorefrontFooterConfig = {
+  showNewsletter?: boolean;
+  showSocialLinks?: boolean;
+  showPaymentLogos?: boolean;
+  copyrightText?: string;
+};
+
+export function StorefrontFooter({
+  menuLinks: menuFromCms,
+  config,
+}: {
+  menuLinks?: FooterNavLink[];
+  config?: StorefrontFooterConfig;
+} = {}) {
   const { t } = useStorefrontI18n();
+  const shopLinks = menuFromCms?.length ? menuFromCms : menuLinks;
+  const showNewsletter = config?.showNewsletter !== false;
+  const showSocial = config?.showSocialLinks !== false;
+  const showPayment = config?.showPaymentLogos !== false;
+  const copyright = config?.copyrightText || `© 2026 Halopeno. ${t("footer.rights")}`;
+
   return (
     <footer className="mt-20">
       <div className="space-y-16 pb-14">
-        <Newsletter />
+        {showNewsletter ? <Newsletter /> : null}
 
         <div className="rounded-t-[40px] bg-[#0c3822] px-4 pb-8 pt-14 text-[#f6efd9] sm:px-6 lg:px-10">
           <div className="mx-auto grid max-w-[1440px] gap-10 sm:grid-cols-2 lg:grid-cols-5">
@@ -62,17 +82,19 @@ export function StorefrontFooter() {
               <p className="mt-4 max-w-sm text-sm leading-relaxed text-[#f6efd9]/70">
                 Small-batch pickled jalapeño flavors, crafted for real heat and real flavor. {t("footer.tagline")}
               </p>
-              <div className="mt-5 flex items-center gap-3">
-                {[Camera, Users, PlayCircle].map((Icon, i) => (
-                  <a
-                    key={i}
-                    href="#"
-                    className="flex size-10 items-center justify-center rounded-full border border-white/15 bg-white/5 transition-colors hover:border-accent hover:bg-accent"
-                  >
-                    <Icon className="size-4" />
-                  </a>
-                ))}
-              </div>
+              {showSocial ? (
+                <div className="mt-5 flex items-center gap-3">
+                  {[Camera, Users, PlayCircle].map((Icon, i) => (
+                    <a
+                      key={i}
+                      href="#"
+                      className="flex size-10 items-center justify-center rounded-full border border-white/15 bg-white/5 transition-colors hover:border-accent hover:bg-accent"
+                    >
+                      <Icon className="size-4" />
+                    </a>
+                  ))}
+                </div>
+              ) : null}
               <div className="mt-5 flex flex-wrap gap-2.5">
                 <a href="#" className="flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-2 text-xs font-medium hover:bg-white/15">
                   <Apple className="size-4" /> App Store
@@ -86,7 +108,7 @@ export function StorefrontFooter() {
             <div>
               <p className="mb-4 font-display text-sm font-semibold text-white">Shop</p>
               <ul className="space-y-2.5 text-sm text-[#f6efd9]/70">
-                {menuLinks.map((l) => (
+                {shopLinks.map((l) => (
                   <li key={l.label}>
                     <Link href={l.href} className="transition-colors hover:text-primary">
                       {l.label}
@@ -145,14 +167,16 @@ export function StorefrontFooter() {
           </div>
 
           <div className="mx-auto mt-8 flex max-w-[1440px] flex-col items-center justify-between gap-4 border-t border-white/10 pt-6 text-xs text-[#f6efd9]/50 sm:flex-row">
-            <p>© 2026 Halopeno. {t("footer.rights")}</p>
+            <p>{copyright}</p>
             <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
               {legalLinks.map((l) => (
                 <Link key={l.label} href={l.href} className="hover:text-primary">
                   {l.label}
                 </Link>
               ))}
-              <span className="text-[#f6efd9]/40">Visa / Mastercard / mada / Apple Pay / Cash on Delivery</span>
+              {showPayment ? (
+                <span className="text-[#f6efd9]/40">Visa / Mastercard / mada / Apple Pay / Cash on Delivery</span>
+              ) : null}
             </div>
           </div>
         </div>

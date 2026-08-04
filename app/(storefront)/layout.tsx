@@ -4,11 +4,19 @@ import { StorefrontFooter } from "@/components/storefront/footer";
 import { CartDrawer } from "@/components/storefront/cart-drawer";
 import { MobileBottomNav } from "@/components/storefront/mobile-bottom-nav";
 import { CatalogLoader } from "@/components/storefront/catalog-loader";
+import { StorefrontPopupHost } from "@/components/storefront/popup-host";
 import { StorefrontI18nProvider } from "@/lib/storefront/i18n/context";
 import { API_URL } from "@/lib/api/client";
-import type { GlobalStylesConfig } from "@/lib/storefront/global-styles";
+import { buildStorefrontStyleVars, type GlobalStylesConfig } from "@/lib/storefront/global-styles";
 import { getActiveTheme } from "@/lib/storefront/active-theme";
 import { ElectroHubFooter, ElectroHubHeader } from "@/components/storefront/themes/electrohub";
+import {
+  fetchFooterConfig,
+  fetchHeaderConfig,
+  fetchStorefrontMenu,
+} from "@/lib/storefront/fetch-content";
+import type { StorefrontHeaderConfig } from "@/components/storefront/header";
+import type { StorefrontFooterConfig } from "@/components/storefront/footer";
 
 export const metadata: Metadata = {
   title: "Halopeno | Small Jar. Big Kick.",
@@ -28,32 +36,53 @@ async function getGlobalStyleOverrides(): Promise<Partial<GlobalStylesConfig> | 
 }
 
 export default async function StorefrontLayout({ children }: { children: React.ReactNode }) {
-  const [overrides, activeTheme] = await Promise.all([getGlobalStyleOverrides(), getActiveTheme()]);
+  const [overrides, activeTheme, headerConfig, footerConfig, headerMenu, footerMenu] = await Promise.all([
+    getGlobalStyleOverrides(),
+    getActiveTheme(),
+    fetchHeaderConfig<StorefrontHeaderConfig>({}),
+    fetchFooterConfig<StorefrontFooterConfig>({}),
+    fetchStorefrontMenu("header", []),
+    fetchStorefrontMenu("footer", []),
+  ]);
   const isElectroHub = activeTheme.id === "electrohub";
+  const styleVars = [
+    isElectroHub
+      ? `--primary: #2563EB; --accent: #06B6D4; --background: #F5F7FB; --foreground: #111827; --radius: 0.75rem;`
+      : "",
+    buildStorefrontStyleVars(overrides),
+  ]
+    .filter(Boolean)
+    .join("\n            ");
 
   return (
     <div
       className="storefront-theme min-h-screen bg-background font-sans text-foreground antialiased"
       data-active-theme={activeTheme.id}
     >
-      {(overrides || isElectroHub) && (
+      {(styleVars || overrides?.customCss) && (
         <style>{`
           .storefront-theme {
-            ${isElectroHub ? `--primary: #2563EB; --accent: #06B6D4; --background: #F5F7FB; --foreground: #111827; --radius: 0.75rem;` : ""}
-            ${overrides?.primary ? `--primary: ${overrides.primary};` : ""}
-            ${overrides?.accent ? `--accent: ${overrides.accent}; --destructive: ${overrides.accent};` : ""}
-            ${overrides?.background ? `--background: ${overrides.background};` : ""}
-            ${overrides?.radius ? `--radius: ${overrides.radius};` : ""}
+            ${styleVars}
           }
+          ${overrides?.customCss ?? ""}
         `}</style>
       )}
       <StorefrontI18nProvider>
         <CatalogLoader />
-        {isElectroHub ? <ElectroHubHeader /> : <StorefrontHeader />}
+        {isElectroHub ? (
+          <ElectroHubHeader />
+        ) : (
+          <StorefrontHeader navLinks={headerMenu.length ? headerMenu : undefined} config={headerConfig} />
+        )}
         <main className="pb-20 md:pb-0">{children}</main>
-        {isElectroHub ? <ElectroHubFooter /> : <StorefrontFooter />}
+        {isElectroHub ? (
+          <ElectroHubFooter />
+        ) : (
+          <StorefrontFooter menuLinks={footerMenu.length ? footerMenu : undefined} config={footerConfig} />
+        )}
         <CartDrawer />
         <MobileBottomNav />
+        <StorefrontPopupHost />
       </StorefrontI18nProvider>
     </div>
   );

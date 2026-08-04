@@ -1,10 +1,15 @@
+"use client";
+
+import * as React from "react";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { SectionHeading } from "../section-heading";
 import { FoodImage } from "../food-image";
-import { blogPosts } from "@/lib/storefront/data/blog";
+import { blogPosts as fallbackPosts } from "@/lib/storefront/data/blog";
 import { Reveal } from "../reveal";
 import { cmsBool, cmsNumber, cmsText, type SectionCmsData } from "@/lib/storefront/section-cms";
+import { api } from "@/lib/api/client";
+import type { BlogPost } from "@/types/storefront";
 
 export function BlogTeaser({ data }: { data?: SectionCmsData } = {}) {
   const title = cmsText(data, "title", "From the Halopeno Journal");
@@ -18,8 +23,22 @@ export function BlogTeaser({ data }: { data?: SectionCmsData } = {}) {
   const showAuthor = cmsBool(data, "showAuthor", false);
   const showExcerpt = cmsBool(data, "showExcerpt", true);
   const showImage = cmsBool(data, "showImage", true);
+  const [allPosts, setAllPosts] = React.useState<BlogPost[]>(fallbackPosts);
 
-  let posts = [...blogPosts];
+  React.useEffect(() => {
+    let cancelled = false;
+    api
+      .get<{ data: BlogPost[] }>("/storefront/blog-posts?limit=24")
+      .then((res) => {
+        if (!cancelled && res.data?.length) setAllPosts(res.data);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  let posts = [...allPosts];
   if (category) posts = posts.filter((post) => post.category.toLowerCase().includes(category));
   if (sort === "oldest") posts = posts.reverse();
   if (sort === "featured") posts = posts.sort((a, b) => a.title.localeCompare(b.title));

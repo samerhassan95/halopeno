@@ -49,6 +49,7 @@ interface BackendCategory {
   name: string;
   slug: string;
   image: string | null;
+  status?: string;
 }
 
 function mapProduct(bp: BackendProduct, categorySlugById: Map<string, string>): Product {
@@ -137,36 +138,32 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
     set({ loading: true });
     try {
       const [catRes, prodRes] = await Promise.all([
-        api.get<{ data: BackendCategory[] }>("/commerce/categories?limit=50"),
-        api.get<{ data: BackendProduct[] }>("/commerce/products?limit=100&sortBy=name&sortOrder=asc"),
+        api.get<{ data: BackendCategory[] }>("/commerce/categories?limit=100"),
+        api.get<{ data: BackendProduct[] }>("/commerce/products?limit=200&sortBy=name&sortOrder=asc"),
       ]);
 
-      // The backend is shared with the Vantage admin dashboard, which seeds its own
-      // generic e-commerce categories/products. Scope the storefront catalog down to
-      // just the Halopeno categories this brand actually sells.
-      const foodSlugs = new Set(fallbackCategories.map((c) => c.slug));
-      const foodCategoriesRaw = catRes.data.filter((c) => foodSlugs.has(c.slug));
-      const foodCategoryIds = new Set(foodCategoriesRaw.map((c) => c.id));
-      const foodProductsRaw = prodRes.data.filter(
-        (p) => p.status === "PUBLISHED" && p.categoryId && foodCategoryIds.has(p.categoryId)
-      );
+      const categoriesRaw = catRes.data.filter((c) => c.status !== "inactive");
+      const productsRaw = prodRes.data.filter((p) => p.status === "PUBLISHED");
 
-      // The backend may not be seeded with Halopeno's own categories/products yet
-      // (e.g. right after a catalog rebrand). Rather than blanking out the shop,
-      // keep the local fallback catalog until the backend actually has matching data.
-      if (foodProductsRaw.length === 0) {
+      // Keep local fallback only when the admin catalog is empty.
+      if (productsRaw.length === 0) {
         set({ loading: false, loaded: true, source: "fallback", error: null });
         return;
       }
 
-      const categorySlugById = new Map(foodCategoriesRaw.map((c) => [c.id, c.slug] as const));
+      const categorySlugById = new Map(categoriesRaw.map((c) => [c.id, c.slug] as const));
       const counts = new Map<string, number>();
-      for (const p of foodProductsRaw) {
-        const slug = (p.categoryId && categorySlugById.get(p.categoryId)) ?? "flavors";
+      for (const p of productsRaw) {
+        const slug = (p.categoryId && categorySlugById.get(p.categoryId)) ?? "uncategorized";
         counts.set(slug, (counts.get(slug) ?? 0) + 1);
       }
 
-      const categories: Category[] = foodCategoriesRaw.map((c) => ({
+      const categories: Category[] = (categoriesRaw.length ? categoriesRaw : fallbackCategories.map((c) => ({
+        id: c.id,
+        name: c.name,
+        slug: c.slug,
+        image: c.image,
+      }))).map((c) => ({
         id: c.id,
         name: c.name,
         slug: c.slug,
@@ -174,16 +171,12 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
         itemCount: counts.get(c.slug) ?? 0,
       }));
 
-      const products = foodProductsRaw.map((p) => mapProduct(p, categorySlugById));
+      const products = productsRaw.map((p) => mapProduct(p, categorySlugById));
 
       set({ products, categories, loading: false, loaded: true, source: "live", error: null });
 
-      // Best-effort: refresh the homepage reviews with real reviews + real customer names.
-      // Failure here shouldn't affect the already-successful catalog load above.
       try {
-        const reviewRes = await api.get<{ data: BackendReview[] }>(
-          "/commerce/reviews?limit=6&sortBy=helpfulCount&sortOrder=desc"
-        );
+        const reviewRes = await api.get<{ data: BackendReview[] }>("/storefront/reviews?limit=8");
         if (reviewRes.data.length) {
           set({ reviews: reviewRes.data.map(mapReview) });
         }

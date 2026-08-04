@@ -29,7 +29,7 @@ import { cn } from "@/lib/utils";
 import { useStorefrontI18n } from "@/lib/storefront/i18n/context";
 import { AccountMenu } from "@/components/storefront/account/account-menu";
 
-const navLinks = [
+const DEFAULT_NAV = [
   { label: "Home", href: "/", key: "nav.home", icon: Home },
   { label: "Shop", href: "/shop", key: "nav.shop", icon: ShoppingBag },
   { label: "Offers", href: "/offers", key: "nav.offers", icon: Tag },
@@ -37,7 +37,30 @@ const navLinks = [
   { label: "Contact", href: "/contact", key: "nav.contact", icon: Mail },
 ];
 
-export function StorefrontHeader() {
+export type HeaderNavLink = { label: string; href: string };
+export type StorefrontHeaderConfig = {
+  showSearch?: boolean;
+  showAccountMenu?: boolean;
+  showWishlist?: boolean;
+  showCart?: boolean;
+  stickyHeader?: boolean;
+};
+
+const ICON_BY_HREF: Record<string, typeof Home> = {
+  "/": Home,
+  "/shop": ShoppingBag,
+  "/offers": Tag,
+  "/about": Info,
+  "/contact": Mail,
+};
+
+export function StorefrontHeader({
+  navLinks: navFromCms,
+  config,
+}: {
+  navLinks?: HeaderNavLink[];
+  config?: StorefrontHeaderConfig;
+} = {}) {
   const pathname = usePathname();
   const { items, openDrawer } = useCartStore();
   const count = cartItemCount(items);
@@ -46,8 +69,29 @@ export function StorefrontHeader() {
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
 
+  const navLinks = (navFromCms?.length ? navFromCms : DEFAULT_NAV).map((link) => {
+    const defaults = DEFAULT_NAV.find((d) => d.href === link.href);
+    return {
+      label: link.label,
+      href: link.href,
+      key: defaults?.key,
+      icon: ICON_BY_HREF[link.href] ?? Flame,
+    };
+  });
+
+  const showSearch = config?.showSearch !== false;
+  const showAccount = config?.showAccountMenu !== false;
+  const showWishlist = config?.showWishlist !== false;
+  const showCart = config?.showCart !== false;
+  const sticky = config?.stickyHeader !== false;
+
   return (
-    <header className="sticky top-0 z-40 border-b border-primary/10 bg-card/90 shadow-[0_8px_28px_-24px_rgba(18,75,45,0.8)] backdrop-blur-xl">
+    <header
+      className={cn(
+        "z-40 border-b border-primary/10 bg-card/90 shadow-[0_8px_28px_-24px_rgba(18,75,45,0.8)] backdrop-blur-xl",
+        sticky ? "sticky top-0" : "relative"
+      )}
+    >
       <div className="mx-auto flex h-[72px] max-w-[1440px] items-center gap-4 px-4 sm:px-6 lg:px-10">
         <Link href="/" className="shrink-0 rounded-xl bg-[#f6efd9] px-1.5 py-1" aria-label="Halopeno home">
           <Image
@@ -66,7 +110,7 @@ export function StorefrontHeader() {
             const active = pathname === link.href;
             return (
               <Link
-                key={link.href}
+                key={`${link.href}-${link.label}`}
                 href={link.href}
                 className={cn(
                   "relative px-4 py-2 text-[14px] font-medium transition-colors after:absolute after:inset-x-4 after:-bottom-0.5 after:h-0.5 after:origin-center after:rounded-full after:bg-accent after:transition-transform",
@@ -75,7 +119,7 @@ export function StorefrontHeader() {
                     : "text-foreground/70 after:scale-x-0 hover:text-primary hover:after:scale-x-100"
                 )}
               >
-                {t(link.key)}
+                {link.key ? t(link.key) : link.label}
               </Link>
             );
           })}
@@ -105,33 +149,35 @@ export function StorefrontHeader() {
             </PopoverContent>
           </Popover>
 
-          <Popover open={searchOpen} onOpenChange={setSearchOpen}>
-            <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon" aria-label="Search">
-                <Search className="size-[18px]" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent align="end" className="w-80">
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  window.location.href = `/shop?search=${encodeURIComponent(query)}`;
-                }}
-                className="flex gap-2"
-              >
-                <Input
-                  autoFocus
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder={t("search.placeholder")}
-                  className="rounded-full"
-                />
-                <Button type="submit" size="icon" className="shrink-0">
-                  <Search className="size-4" />
+          {showSearch ? (
+            <Popover open={searchOpen} onOpenChange={setSearchOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" aria-label="Search">
+                  <Search className="size-[18px]" />
                 </Button>
-              </form>
-            </PopoverContent>
-          </Popover>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-80">
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    window.location.href = `/shop?search=${encodeURIComponent(query)}`;
+                  }}
+                  className="flex gap-2"
+                >
+                  <Input
+                    autoFocus
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder={t("search.placeholder")}
+                    className="rounded-full"
+                  />
+                  <Button type="submit" size="icon" className="shrink-0">
+                    <Search className="size-4" />
+                  </Button>
+                </form>
+              </PopoverContent>
+            </Popover>
+          ) : null}
 
           <Button
             variant="ghost"
@@ -144,22 +190,26 @@ export function StorefrontHeader() {
             <Languages className="size-[18px]" />
           </Button>
 
-          <Button variant="ghost" size="icon" className="hidden sm:inline-flex" asChild aria-label="Favorites">
-            <Link href="/account?tab=favorites">
-              <Heart className="size-[18px]" />
-            </Link>
-          </Button>
+          {showWishlist ? (
+            <Button variant="ghost" size="icon" className="hidden sm:inline-flex" asChild aria-label="Favorites">
+              <Link href="/account?tab=favorites">
+                <Heart className="size-[18px]" />
+              </Link>
+            </Button>
+          ) : null}
 
-          <AccountMenu />
+          {showAccount ? <AccountMenu /> : null}
 
-          <Button variant="ghost" size="icon" className="relative" onClick={openDrawer} aria-label="Cart">
-            <ShoppingBag className="size-[18px]" />
-            {count > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
-                {count}
-              </span>
-            )}
-          </Button>
+          {showCart ? (
+            <Button variant="ghost" size="icon" className="relative" onClick={openDrawer} aria-label="Cart">
+              <ShoppingBag className="size-[18px]" />
+              {count > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                  {count}
+                </span>
+              )}
+            </Button>
+          ) : null}
 
           <Button className="hidden lg:inline-flex" asChild>
             <Link href="/shop">{t("nav.orderNow")}</Link>
@@ -186,7 +236,7 @@ export function StorefrontHeader() {
                 <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">Browse</p>
                 {navLinks.map((link) => (
                   <Link
-                    key={link.href}
+                    key={`${link.href}-${link.label}`}
                     href={link.href}
                     onClick={() => setMobileOpen(false)}
                     className={cn(
@@ -197,7 +247,7 @@ export function StorefrontHeader() {
                     )}
                   >
                     <link.icon className="size-[18px]" />
-                    {t(link.key)}
+                    {link.key ? t(link.key) : link.label}
                   </Link>
                 ))}
                 <div className="my-4 h-px bg-primary/10" />

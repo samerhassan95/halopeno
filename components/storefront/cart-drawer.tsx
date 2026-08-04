@@ -29,7 +29,8 @@ export function CartDrawer() {
 
   const subtotal = cartSubtotal(items);
   const discount = coupon ? subtotal * (coupon.discountPct / 100) : 0;
-  const deliveryFee = subtotal >= FREE_DELIVERY_THRESHOLD || subtotal === 0 ? 0 : DELIVERY_FEE;
+  const deliveryFee =
+    coupon?.freeShipping || subtotal >= FREE_DELIVERY_THRESHOLD || subtotal === 0 ? 0 : DELIVERY_FEE;
   const tax = (subtotal - discount) * TAX_RATE;
   const total = Math.max(0, subtotal - discount + deliveryFee + tax);
   const progress = Math.min(100, (subtotal / FREE_DELIVERY_THRESHOLD) * 100);
@@ -37,9 +38,9 @@ export function CartDrawer() {
 
   const recommended = products.filter((p) => !items.some((i) => i.productId === p.id)).slice(0, 3);
 
-  function handleApplyCoupon() {
+  async function handleApplyCoupon() {
     if (!code.trim()) return;
-    const ok = applyCoupon(code);
+    const ok = await applyCoupon(code);
     if (ok) toast.success(`Coupon ${code.toUpperCase()} applied`);
     else toast.error("That coupon code isn't valid");
     setCode("");
