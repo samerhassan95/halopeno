@@ -8,6 +8,8 @@ import { WhyChooseUs } from "@/components/storefront/home/why-choose-us";
 import { AboutTeaser } from "@/components/storefront/home/about-teaser";
 import { ReviewsSection } from "@/components/storefront/home/reviews-section";
 import { BlogTeaser } from "@/components/storefront/home/blog-teaser";
+import { FlashDealsSection } from "@/components/storefront/home/flash-deals-section";
+import { StorefrontBannerStrip } from "@/components/storefront/banner-strip";
 import { SectionShell } from "@/components/storefront/home/section-shell";
 import { API_URL } from "@/lib/api/client";
 import {
@@ -16,7 +18,6 @@ import {
   type HomepageSectionConfig,
 } from "@/lib/storefront/homepage-sections";
 import { getActiveTheme } from "@/lib/storefront/active-theme";
-import { ElectroHubHomepage } from "@/components/storefront/themes/electrohub";
 import type { SectionCmsData } from "@/lib/storefront/section-cms";
 
 type SectionComponent = ComponentType<{ data?: SectionCmsData }>;
@@ -48,11 +49,12 @@ async function getHomepageSections(): Promise<HomepageSectionConfig[]> {
 
 export default async function StorefrontHomePage() {
   const [sections, activeTheme] = await Promise.all([getHomepageSections(), getActiveTheme()]);
-  if (activeTheme.id === "electrohub") return <ElectroHubHomepage />;
   const ordered = [...sections].filter((s) => s.visible).sort((a, b) => a.order - b.order);
+  const isElectroHub = activeTheme.id === "electrohub";
 
   return (
-    <>
+    <div className={isElectroHub ? "electrohub-home" : undefined} data-theme={activeTheme.id}>
+      <StorefrontBannerStrip placement="homepage" />
       {ordered.map((s) => {
         const Component = COMPONENT_MAP[s.type];
         if (!Component) return null;
@@ -62,6 +64,7 @@ export default async function StorefrontHomePage() {
           </SectionShell>
         );
       })}
-    </>
+      <FlashDealsSection />
+    </div>
   );
 }

@@ -12,10 +12,8 @@ import {
   useCartStore,
   cartSubtotal,
   lineTotal,
-  FREE_DELIVERY_THRESHOLD,
-  DELIVERY_FEE,
-  TAX_RATE,
 } from "@/lib/storefront/store/cart-store";
+import { useCommerceConfigStore } from "@/lib/storefront/store/commerce-config-store";
 import { cn } from "@/lib/utils";
 import { formatSAR } from "@/lib/storefront/format";
 import { toast } from "sonner";
@@ -25,16 +23,22 @@ export function CartDrawer() {
   const { items, isDrawerOpen, closeDrawer, removeItem, updateQty, coupon, applyCoupon, removeCoupon } =
     useCartStore();
   const products = useCatalogStore((s) => s.products);
+  const quote = useCommerceConfigStore((s) => s.quote);
+  const refreshQuote = useCommerceConfigStore((s) => s.refreshQuote);
   const [code, setCode] = React.useState("");
 
   const subtotal = cartSubtotal(items);
+  React.useEffect(() => {
+    void refreshQuote(subtotal);
+  }, [subtotal, refreshQuote]);
+
   const discount = coupon ? subtotal * (coupon.discountPct / 100) : 0;
   const deliveryFee =
-    coupon?.freeShipping || subtotal >= FREE_DELIVERY_THRESHOLD || subtotal === 0 ? 0 : DELIVERY_FEE;
-  const tax = (subtotal - discount) * TAX_RATE;
+    coupon?.freeShipping || subtotal >= quote.freeThreshold || subtotal === 0 ? 0 : quote.deliveryFee;
+  const tax = (subtotal - discount) * quote.taxRate;
   const total = Math.max(0, subtotal - discount + deliveryFee + tax);
-  const progress = Math.min(100, (subtotal / FREE_DELIVERY_THRESHOLD) * 100);
-  const remaining = Math.max(0, FREE_DELIVERY_THRESHOLD - subtotal);
+  const progress = Math.min(100, (subtotal / quote.freeThreshold) * 100);
+  const remaining = Math.max(0, quote.freeThreshold - subtotal);
 
   const recommended = products.filter((p) => !items.some((i) => i.productId === p.id)).slice(0, 3);
 

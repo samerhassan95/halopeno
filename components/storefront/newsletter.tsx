@@ -10,11 +10,25 @@ import { toast } from "sonner";
 export function Newsletter() {
   const [email, setEmail] = React.useState("");
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!email) return;
-    toast.success("You're subscribed! Watch your inbox for delicious offers.");
-    setEmail("");
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api/v1"}/storefront/newsletter`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        }
+      );
+      const json = await res.json();
+      if (!res.ok || !json.ok) throw new Error(json.message || "Failed to subscribe");
+      toast.success("You're subscribed! Watch your inbox for delicious offers.");
+      setEmail("");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not subscribe");
+    }
   }
 
   return (

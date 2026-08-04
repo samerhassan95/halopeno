@@ -442,6 +442,7 @@ model Collection {
   description String?
   image       String?
   status      String   @default("active")
+  productIds  String[] @default([])
   createdAt   DateTime @default(now())
 }
 

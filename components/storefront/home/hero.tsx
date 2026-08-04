@@ -51,10 +51,37 @@ export function Hero({ data }: { data?: SectionCmsData } = {}) {
   const showArrows = cmsBool(data, "arrows", true);
   const showDots = cmsBool(data, "dots", true);
   const hasCmsCopy = Boolean(title || subtitle || description || primaryCta || eyebrow);
+  const [bannerSlides, setBannerSlides] = React.useState<Slide[] | null>(null);
+
+  React.useEffect(() => {
+    if (cmsImage || cmsVideo) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api/v1"}/storefront/banners?placement=homepage`,
+          { cache: "no-store" }
+        );
+        if (!res.ok) return;
+        const json = await res.json();
+        const rows = (json.data ?? []) as Array<{ title: string; image: string }>;
+        if (!cancelled && rows.length) {
+          setBannerSlides(rows.map((row) => ({ src: row.image, alt: row.title })));
+        }
+      } catch {
+        // keep defaults
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [cmsImage, cmsVideo]);
 
   const slides = cmsImage
     ? [{ src: cmsImage, alt: cmsAlt }, ...(cmsMobile && cmsMobile !== cmsImage ? [{ src: cmsMobile, alt: cmsAlt }] : [])]
-    : DEFAULT_SLIDES;
+    : bannerSlides?.length
+      ? bannerSlides
+      : DEFAULT_SLIDES;
 
   const [active, setActive] = React.useState(0);
   const [paused, setPaused] = React.useState(false);

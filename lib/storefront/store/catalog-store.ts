@@ -40,6 +40,7 @@ interface BackendProduct {
   reviewCount: number;
   status: string;
   categoryId: string | null;
+  brandId: string | null;
   images: BackendImage[];
   variants: BackendVariant[];
   reviews?: BackendReview[];
@@ -51,8 +52,23 @@ interface BackendCategory {
   image: string | null;
   status?: string;
 }
+interface BackendBrand {
+  id: string;
+  name: string;
+  slug: string;
+}
+interface BackendCollection {
+  id: string;
+  name: string;
+  slug: string;
+  productIds?: string[];
+}
 
-function mapProduct(bp: BackendProduct, categorySlugById: Map<string, string>): Product {
+function mapProduct(
+  bp: BackendProduct,
+  categorySlugById: Map<string, string>,
+  brandSlugById: Map<string, string>
+): Product {
   const meta = getFallbackBySlug(bp.slug);
   const regularPrice = Number(bp.regularPrice);
   const salePrice = bp.salePrice ? Number(bp.salePrice) : null;
@@ -69,6 +85,7 @@ function mapProduct(bp: BackendProduct, categorySlugById: Map<string, string>): 
     image: bp.images[0]?.url ?? meta?.image ?? "",
     gallery: bp.images.length ? bp.images.map((image) => image.url) : (meta?.gallery ?? []),
     categorySlug: (bp.categoryId && categorySlugById.get(bp.categoryId)) ?? meta?.categorySlug ?? "flavors",
+    brandSlug: (bp.brandId && brandSlugById.get(bp.brandId)) ?? undefined,
     diet: meta?.diet ?? "veg",
     spiceLevel: meta?.spiceLevel ?? "medium",
     price,
@@ -116,6 +133,8 @@ function mapReview(br: BackendReview): Review {
 interface CatalogState {
   products: Product[];
   categories: Category[];
+  brands: { id: string; name: string; slug: string }[];
+  collectionsBySlug: Record<string, string[]>;
   reviews: Review[];
   loading: boolean;
   loaded: boolean;
@@ -127,6 +146,8 @@ interface CatalogState {
 export const useCatalogStore = create<CatalogState>((set, get) => ({
   products: fallbackProducts,
   categories: fallbackCategories,
+  brands: [],
+  collectionsBySlug: {},
   reviews: fallbackReviews,
   loading: false,
   loaded: false,
@@ -137,21 +158,23 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
     if (get().loading || get().loaded) return;
     set({ loading: true });
     try {
-      const [catRes, prodRes] = await Promise.all([
+      const [catRes, prodRes, brandRes, collectionRes] = await Promise.all([
         api.get<{ data: BackendCategory[] }>("/commerce/categories?limit=100"),
         api.get<{ data: BackendProduct[] }>("/commerce/products?limit=200&sortBy=name&sortOrder=asc"),
+        api.get<{ data: BackendBrand[] }>("/storefront/brands").catch(() => ({ data: [] as BackendBrand[] })),
+        api.get<{ data: BackendCollection[] }>("/storefront/collections").catch(() => ({ data: [] as BackendCollection[] })),
       ]);
 
       const categoriesRaw = catRes.data.filter((c) => c.status !== "inactive");
       const productsRaw = prodRes.data.filter((p) => p.status === "PUBLISHED");
 
-      // Keep local fallback only when the admin catalog is empty.
       if (productsRaw.length === 0) {
         set({ loading: false, loaded: true, source: "fallback", error: null });
         return;
       }
 
       const categorySlugById = new Map(categoriesRaw.map((c) => [c.id, c.slug] as const));
+      const brandSlugById = new Map((brandRes.data ?? []).map((b) => [b.id, b.slug] as const));
       const counts = new Map<string, number>();
       for (const p of productsRaw) {
         const slug = (p.categoryId && categorySlugById.get(p.categoryId)) ?? "uncategorized";
@@ -171,9 +194,22 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
         itemCount: counts.get(c.slug) ?? 0,
       }));
 
-      const products = productsRaw.map((p) => mapProduct(p, categorySlugById));
+      const products = productsRaw.map((p) => mapProduct(p, categorySlugById, brandSlugById));
+      const collectionsBySlug: Record<string, string[]> = {};
+      for (const collection of collectionRes.data ?? []) {
+        collectionsBySlug[collection.slug] = collection.productIds ?? [];
+      }
 
-      set({ products, categories, loading: false, loaded: true, source: "live", error: null });
+      set({
+        products,
+        categories,
+        brands: brandRes.data ?? [],
+        collectionsBySlug,
+        loading: false,
+        loaded: true,
+        source: "live",
+        error: null,
+      });
 
       try {
         const reviewRes = await api.get<{ data: BackendReview[] }>("/storefront/reviews?limit=8");
@@ -197,11 +233,10 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
 export async function fetchProductReviews(productId: string): Promise<Review[]> {
   try {
     const res = await api.get<{ data: BackendReview[] }>(
-      `/commerce/reviews?search=${encodeURIComponent(productId)}&limit=20`
+      `/storefront/reviews?productId=${encodeURIComponent(productId)}&limit=20`
     );
-    const matching = res.data.filter((r) => r.productId === productId);
-    if (!matching.length) return [];
-    return matching.map(mapReview);
+    if (!res.data.length) return [];
+    return res.data.map(mapReview);
   } catch {
     return [];
   }

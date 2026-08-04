@@ -25,6 +25,7 @@ const MOBILE_COLS: Record<number, string> = {
 
 export function BestSellers({ data }: { data?: SectionCmsData } = {}) {
   const products = useCatalogStore((s) => s.products);
+  const collectionsBySlug = useCatalogStore((s) => s.collectionsBySlug);
   const title = cmsText(data, "title", "Most Loved by Our Customers");
   const subtitle = cmsText(data, "subtitle", "");
   const viewAllText = cmsText(data, "viewAllText", "");
@@ -32,10 +33,14 @@ export function BestSellers({ data }: { data?: SectionCmsData } = {}) {
   const desktopColumns = Math.min(6, Math.max(2, cmsNumber(data, "desktopColumns", 4)));
   const mobileColumns = Math.min(2, Math.max(1, cmsNumber(data, "mobileColumns", 1)));
   const flags = sectionCardFlags(data);
-  const display = selectSectionProducts(products, {
-    ...data,
-    sort: data?.sort ?? "best-selling",
-  });
+  const display = selectSectionProducts(
+    products,
+    {
+      ...data,
+      sort: data?.sort ?? "best-selling",
+    },
+    collectionsBySlug
+  );
 
   return (
     <section className="bg-secondary/40 py-16">

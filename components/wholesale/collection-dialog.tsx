@@ -50,6 +50,7 @@ export interface CollectionItem {
   description?: string | null;
   image?: string | null;
   status: string;
+  productIds?: string[];
 }
 interface Product {
   id: string;
@@ -238,6 +239,9 @@ export function CollectionDialog({
             description: editing.description || "",
             image: editing.image || "",
             status: editing.status,
+            products: editing.productIds?.length
+              ? editing.productIds
+              : read(editing.id).products ?? [],
           }
         : blank;
       setForm(next);
@@ -296,6 +300,7 @@ export function CollectionDialog({
         description: form.description || form.shortDescription || undefined,
         image: form.image || undefined,
         status: mode === "draft" ? "draft" : form.status,
+        productIds: form.products ?? [],
       };
       const saved = editing
         ? await api.patch<CollectionItem>(
@@ -309,9 +314,11 @@ export function CollectionDialog({
         description: ___,
         image: ____,
         status: _____,
+        products: ______,
         ...admin
       } = form;
-      localStorage.setItem(storage(saved.id), JSON.stringify(admin));
+      // Keep non-catalog admin extras locally; product membership is persisted on the collection.
+      localStorage.setItem(storage(saved.id), JSON.stringify({ ...admin, products: form.products }));
       onSaved(
         { ...saved, status: mode === "draft" ? "draft" : saved.status },
         Boolean(editing),

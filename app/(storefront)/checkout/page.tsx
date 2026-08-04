@@ -26,10 +26,8 @@ import { EmptyState } from "@/components/common/empty-state";
 import {
   useCartStore,
   cartSubtotal,
-  FREE_DELIVERY_THRESHOLD,
-  DELIVERY_FEE,
-  TAX_RATE,
 } from "@/lib/storefront/store/cart-store";
+import { useCommerceConfigStore } from "@/lib/storefront/store/commerce-config-store";
 import { useOrderStore } from "@/lib/storefront/store/order-store";
 import { cn } from "@/lib/utils";
 import { formatSAR } from "@/lib/storefront/format";
@@ -49,7 +47,7 @@ const schema = z.object({
   instructions: z.string().optional(),
   deliveryTime: z.enum(["now", "scheduled"]),
   scheduledAt: z.string().optional(),
-  paymentMethod: z.enum(["cod", "card", "apple_pay", "google_pay", "wallet"]),
+  paymentMethod: z.string().min(1),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -57,6 +55,14 @@ type FormData = z.infer<typeof schema>;
 const savedAddresses = {
   home: "42 Cedar Lane, Springfield",
   work: "108 Market Street, Springfield",
+};
+
+const PAYMENT_ICONS: Record<string, typeof Banknote> = {
+  cod: Banknote,
+  card: CreditCard,
+  apple_pay: Smartphone,
+  google_pay: Smartphone,
+  wallet: Wallet,
 };
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -72,7 +78,13 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { items, coupon, clear } = useCartStore();
   const { placeOrder } = useOrderStore();
+  const quote = useCommerceConfigStore((s) => s.quote);
+  const site = useCommerceConfigStore((s) => s.site);
+  const refreshQuote = useCommerceConfigStore((s) => s.refreshQuote);
   const [submitting, setSubmitting] = React.useState(false);
+
+  const paymentOptions = (site?.paymentMethods ?? []).filter((m) => m.enabled !== false);
+  const defaultPayment = paymentOptions[0]?.id ?? "cod";
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -83,17 +95,30 @@ export default function CheckoutPage() {
       email: "",
       addressChoice: "home",
       deliveryTime: "now",
-      paymentMethod: "cod",
+      paymentMethod: defaultPayment,
     },
   });
 
   const { register, watch, setValue, handleSubmit, formState } = form;
   const values = watch();
 
+  React.useEffect(() => {
+    void refreshQuote(cartSubtotal(items));
+  }, [items, refreshQuote]);
+
+  React.useEffect(() => {
+    if (paymentOptions.length && !paymentOptions.some((m) => m.id === values.paymentMethod)) {
+      setValue("paymentMethod", defaultPayment);
+    }
+  }, [defaultPayment, paymentOptions, setValue, values.paymentMethod]);
+
   const subtotal = cartSubtotal(items);
   const discount = coupon ? subtotal * (coupon.discountPct / 100) : 0;
-  const deliveryFee = values.deliveryMethod === "pickup" || subtotal >= FREE_DELIVERY_THRESHOLD || subtotal === 0 ? 0 : DELIVERY_FEE;
-  const tax = (subtotal - discount) * TAX_RATE;
+  const deliveryFee =
+    values.deliveryMethod === "pickup" || coupon?.freeShipping || subtotal >= quote.freeThreshold || subtotal === 0
+      ? 0
+      : quote.deliveryFee;
+  const tax = (subtotal - discount) * quote.taxRate;
   const total = Math.max(0, subtotal - discount + deliveryFee + tax);
 
   function resolvedAddress() {
@@ -300,29 +325,34 @@ export default function CheckoutPage() {
 
           <Section title="Payment method">
             <div className="grid gap-3 sm:grid-cols-2">
-              {[
-                { value: "cod", label: "Cash on Delivery", icon: Banknote },
-                { value: "card", label: "Credit / Debit Card", icon: CreditCard },
-                { value: "apple_pay", label: "Apple Pay", icon: Smartphone },
-                { value: "google_pay", label: "Google Pay", icon: Smartphone },
-                { value: "wallet", label: "Wallet Balance", icon: Wallet },
-              ].map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setValue("paymentMethod", opt.value as FormData["paymentMethod"])}
-                  className={cn(
-                    "flex items-center gap-3 rounded-2xl border p-4 text-left",
-                    values.paymentMethod === opt.value ? "border-primary bg-primary/5" : "border-border"
-                  )}
-                >
-                  <opt.icon className="size-5 text-primary" />
-                  <span className="font-medium text-brown">{opt.label}</span>
-                </button>
-              ))}
+              {(paymentOptions.length
+                ? paymentOptions
+                : [
+                    { id: "cod", label: "Cash on Delivery" },
+                    { id: "card", label: "Credit / Debit Card" },
+                    { id: "apple_pay", label: "Apple Pay" },
+                    { id: "google_pay", label: "Google Pay" },
+                  ]
+              ).map((opt) => {
+                const Icon = PAYMENT_ICONS[opt.id] ?? CreditCard;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setValue("paymentMethod", opt.id)}
+                    className={cn(
+                      "flex items-center gap-3 rounded-2xl border p-4 text-left",
+                      values.paymentMethod === opt.id ? "border-primary bg-primary/5" : "border-border"
+                    )}
+                  >
+                    <Icon className="size-5 text-primary" />
+                    <span className="font-medium text-brown">{opt.label}</span>
+                  </button>
+                );
+              })}
             </div>
             <p className="mt-4 flex items-center gap-1.5 text-xs text-muted-foreground">
-              <ShieldCheck className="size-3.5 text-accent" /> All payments are encrypted and processed securely.
+              <ShieldCheck className="size-3.5 text-accent" /> Payment methods are configured from the admin integrations settings.
             </p>
           </Section>
         </div>

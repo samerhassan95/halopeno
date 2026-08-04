@@ -30,6 +30,8 @@ import { useWishlistStore } from "@/lib/storefront/store/wishlist-store";
 import { useCatalogStore, fetchProductReviews } from "@/lib/storefront/store/catalog-store";
 import { cn } from "@/lib/utils";
 import { formatSAR } from "@/lib/storefront/format";
+import { api } from "@/lib/api/client";
+import { Input } from "@/components/ui/input";
 import {
   useStorefrontI18n,
   localizedName,
@@ -395,6 +397,77 @@ export function ProductDetail({ product }: { product: Product }) {
           </div>
         </div>
       )}
+
+      <ProductQuestions productId={product.id} />
+    </div>
+  );
+}
+
+function ProductQuestions({ productId }: { productId: string }) {
+  const [items, setItems] = React.useState<Array<{ id: string; question: string; answer: string | null; customerName: string }>>([]);
+  const [name, setName] = React.useState("");
+  const [email, setEmail] = React.useState("");
+  const [question, setQuestion] = React.useState("");
+  const [sending, setSending] = React.useState(false);
+
+  React.useEffect(() => {
+    api
+      .get<{ data: typeof items }>(`/storefront/products/${productId}/questions`)
+      .then((res) => setItems(res.data ?? []))
+      .catch(() => undefined);
+  }, [productId]);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!question.trim() || !email.trim()) return;
+    setSending(true);
+    try {
+      const res = await api.post<{ ok: boolean; message?: string }>(`/storefront/products/${productId}/questions`, {
+        name,
+        email,
+        question,
+      });
+      if (!res.ok) throw new Error(res.message || "Failed");
+      toast.success("Question submitted — we'll answer soon.");
+      setQuestion("");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not submit question");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <div className="mt-14 rounded-[28px] bg-card p-6 shadow-soft sm:p-8">
+      <h2 className="font-display text-2xl font-semibold text-brown">Questions & Answers</h2>
+      <div className="mt-5 space-y-4">
+        {items.length ? (
+          items.map((item) => (
+            <div key={item.id} className="rounded-2xl border border-border p-4">
+              <p className="text-sm font-semibold text-brown">Q: {item.question}</p>
+              <p className="mt-2 text-sm text-muted-foreground">A: {item.answer}</p>
+              <p className="mt-1 text-xs text-muted-foreground">Asked by {item.customerName}</p>
+            </div>
+          ))
+        ) : (
+          <p className="text-sm text-muted-foreground">No public answers yet. Be the first to ask.</p>
+        )}
+      </div>
+      <form onSubmit={submit} className="mt-6 grid gap-3 sm:grid-cols-2">
+        <Input placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} className="h-11 rounded-xl" />
+        <Input placeholder="Email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="h-11 rounded-xl" />
+        <textarea
+          required
+          value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+          placeholder="Ask a question about this product"
+          rows={3}
+          className="rounded-2xl border border-input bg-background px-4 py-2.5 text-sm sm:col-span-2"
+        />
+        <Button type="submit" disabled={sending} className="sm:col-span-2 sm:w-fit">
+          {sending ? "Sending…" : "Submit question"}
+        </Button>
+      </form>
     </div>
   );
 }

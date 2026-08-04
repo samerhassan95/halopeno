@@ -33,6 +33,7 @@ export interface Product {
   image: string;
   gallery: string[];
   categorySlug: string;
+  brandSlug?: string;
   diet: DietType;
   spiceLevel: SpiceLevel;
   price: number;

@@ -7,6 +7,7 @@ import type { DietType, SpiceLevel } from "@/types/storefront";
 
 export interface MenuFilterState {
   categories: string[];
+  brands: string[];
   maxPrice: number;
   diets: DietType[];
   spiceLevels: SpiceLevel[];
@@ -16,6 +17,7 @@ export interface MenuFilterState {
 
 export const defaultFilters: MenuFilterState = {
   categories: [],
+  brands: [],
   maxPrice: 50,
   diets: [],
   spiceLevels: [],
@@ -48,6 +50,7 @@ export function MenuFilters({
   onChange: (filters: MenuFilterState) => void;
 }) {
   const categories = useCatalogStore((s) => s.categories);
+  const brands = useCatalogStore((s) => s.brands);
 
   return (
     <div className="space-y-7">
@@ -66,6 +69,23 @@ export function MenuFilters({
           ))}
         </div>
       </div>
+
+      {brands.length > 0 ? (
+        <div>
+          <p className="mb-3 font-display text-sm font-semibold text-brown">Brand</p>
+          <div className="space-y-2">
+            {brands.map((brand) => (
+              <label key={brand.slug} className="flex cursor-pointer items-center gap-2.5 text-sm text-foreground/80">
+                <Checkbox
+                  checked={filters.brands.includes(brand.slug)}
+                  onCheckedChange={() => onChange({ ...filters, brands: toggle(filters.brands, brand.slug) })}
+                />
+                {brand.name}
+              </label>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       <div>
         <p className="mb-3 font-display text-sm font-semibold text-brown">Price Range</p>

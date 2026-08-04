@@ -1,7 +1,11 @@
 import type { Product } from "@/types/storefront";
 import { cmsNumber, cmsText, type SectionCmsData } from "@/lib/storefront/section-cms";
 
-export function selectSectionProducts(products: Product[], data?: SectionCmsData) {
+export function selectSectionProducts(
+  products: Product[],
+  data?: SectionCmsData,
+  collectionsBySlug?: Record<string, string[]>
+) {
   const source = cmsText(data, "productSource", "automatic");
   const sort = cmsText(data, "sort", "featured");
   const limit = Math.max(1, cmsNumber(data, "limit", 8));
@@ -19,12 +23,22 @@ export function selectSectionProducts(products: Product[], data?: SectionCmsData
     }
     list = productIds.map((id) => byKey.get(id)).filter((product): product is Product => Boolean(product));
   } else if (source === "collection" && collectionSlug) {
-    list = list.filter(
-      (product) =>
-        product.categorySlug === collectionSlug ||
-        product.slug.includes(collectionSlug) ||
-        product.name.toLowerCase().includes(collectionSlug.toLowerCase())
-    );
+    const collectionIds =
+      (Array.isArray(data?.collectionProductIds) ? data!.collectionProductIds.map(String) : null) ??
+      collectionsBySlug?.[collectionSlug] ??
+      [];
+    if (collectionIds.length) {
+      const byId = new Map(list.map((product) => [product.id, product]));
+      list = collectionIds.map((id) => byId.get(id)).filter((product): product is Product => Boolean(product));
+    } else {
+      list = list.filter(
+        (product) =>
+          product.categorySlug === collectionSlug ||
+          product.tags.includes(collectionSlug) ||
+          product.slug.includes(collectionSlug) ||
+          product.name.toLowerCase().includes(collectionSlug.toLowerCase())
+      );
+    }
   } else if (sort === "best-selling") {
     list = list.filter((product) => product.bestSeller);
     if (!list.length) list = [...products];

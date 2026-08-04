@@ -92,6 +92,7 @@ function normalizeSections(sections: HomepageSectionConfig[]) {
 export default function HomepageBuilderPage() {
   const [sections, setSections] = React.useState<HomepageSectionConfig[]>(normalizeSections(DEFAULT_HOMEPAGE_SECTIONS));
   const [settingId, setSettingId] = React.useState<string | null>(null);
+  const [draftSettingId, setDraftSettingId] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [saving, setSaving] = React.useState(false);
   const [saveState, setSaveState] = React.useState<"saved" | "saving" | "unsaved">("saved");
@@ -109,10 +110,14 @@ export default function HomepageBuilderPage() {
   const [future, setFuture] = React.useState<HomepageSectionConfig[][]>([]);
 
   React.useEffect(() => {
-    api.get<{ data: SettingRow[] }>("/settings/settings?search=homepage_sections&limit=5")
+    api.get<{ data: SettingRow[] }>("/settings/settings?search=homepage_sections&limit=20")
       .then((response) => {
-        const row = response.data.find((item) => item.group === "storefront" && item.key === "homepage_sections");
-        if (row?.value?.length) { setSettingId(row.id); setSections(normalizeSections(row.value)); }
+        const live = response.data.find((item) => item.group === "storefront" && item.key === "homepage_sections");
+        const draft = response.data.find((item) => item.group === "storefront" && item.key === "homepage_sections_draft");
+        if (live) setSettingId(live.id);
+        if (draft) setDraftSettingId(draft.id);
+        const source = draft?.value?.length ? draft.value : live?.value;
+        if (source?.length) setSections(normalizeSections(source));
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -121,16 +126,29 @@ export default function HomepageBuilderPage() {
   const persist = React.useCallback(async (value: HomepageSectionConfig[], publish = false) => {
     setSaving(true); setSaveState("saving");
     try {
-      if (settingId) await api.patch(`/settings/settings/${settingId}`, { value });
-      else {
-        const created = await api.post<SettingRow>("/settings/settings", { group: "storefront", key: "homepage_sections", value });
-        setSettingId(created.id);
+      if (publish) {
+        if (settingId) await api.patch(`/settings/settings/${settingId}`, { value });
+        else {
+          const created = await api.post<SettingRow>("/settings/settings", { group: "storefront", key: "homepage_sections", value });
+          setSettingId(created.id);
+        }
+        if (draftSettingId) await api.patch(`/settings/settings/${draftSettingId}`, { value });
+        else {
+          const createdDraft = await api.post<SettingRow>("/settings/settings", { group: "storefront", key: "homepage_sections_draft", value });
+          setDraftSettingId(createdDraft.id);
+        }
+      } else {
+        if (draftSettingId) await api.patch(`/settings/settings/${draftSettingId}`, { value });
+        else {
+          const created = await api.post<SettingRow>("/settings/settings", { group: "storefront", key: "homepage_sections_draft", value });
+          setDraftSettingId(created.id);
+        }
       }
       setPageDirty(false); setSaveState("saved"); setLastSaved(new Date());
-      toast.success(publish ? "Homepage published" : "Homepage draft saved", { description: publish ? "The latest sections are live on the storefront." : "All section changes are safe." });
+      toast.success(publish ? "Homepage published" : "Homepage draft saved", { description: publish ? "The latest sections are live on the storefront." : "Draft only — click Publish to go live." });
     } catch (error) { setSaveState("unsaved"); toast.error(error instanceof ApiError ? error.message : "Failed to save homepage"); }
     finally { setSaving(false); }
-  }, [settingId]);
+  }, [draftSettingId, settingId]);
 
   React.useEffect(() => {
     if (!pageDirty || isDirty || loading) return;

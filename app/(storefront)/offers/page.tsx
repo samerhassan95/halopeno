@@ -1,5 +1,6 @@
 import { SectionHeading } from "@/components/storefront/section-heading";
 import { OfferCard } from "@/components/storefront/offer-card";
+import { FlashDealsSection } from "@/components/storefront/home/flash-deals-section";
 import { fetchStorefrontOffers } from "@/lib/storefront/fetch-content";
 
 export default async function OffersPage() {
@@ -12,6 +13,9 @@ export default async function OffersPage() {
         {offers.map((offer) => (
           <OfferCard key={offer.id} offer={offer} />
         ))}
+      </div>
+      <div className="mt-6">
+        <FlashDealsSection />
       </div>
     </div>
   );

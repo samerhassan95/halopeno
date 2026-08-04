@@ -18,7 +18,7 @@ const serviceLinks = [
   { label: "Contact Us", href: "/contact" },
   { label: "About Us", href: "/about" },
   { label: "Halopeno Rewards", href: "/loyalty" },
-  { label: "FAQs", href: "/contact" },
+  { label: "FAQs", href: "/faq" },
 ];
 
 const accountLinks = [
@@ -30,9 +30,10 @@ const accountLinks = [
 ];
 
 const legalLinks = [
-  { label: "Privacy Policy", href: "/contact" },
-  { label: "Terms & Conditions", href: "/contact" },
-  { label: "Refund Policy", href: "/contact" },
+  { label: "Privacy Policy", href: "/pages/privacy" },
+  { label: "Terms & Conditions", href: "/pages/terms" },
+  { label: "Refund Policy", href: "/pages/refund" },
+  { label: "FAQs", href: "/faq" },
 ];
 
 export type FooterNavLink = { label: string; href: string };

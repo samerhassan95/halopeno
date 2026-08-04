@@ -25,6 +25,7 @@ const MOBILE_COLS: Record<number, string> = {
 
 export function SignatureDishes({ data }: { data?: SectionCmsData } = {}) {
   const products = useCatalogStore((s) => s.products);
+  const collectionsBySlug = useCatalogStore((s) => s.collectionsBySlug);
   const title = cmsText(data, "title", "Our Signature Flavors");
   const subtitle = cmsText(data, "subtitle", "");
   const viewAllText = cmsText(data, "viewAllText", "Shop all flavors");
@@ -32,7 +33,7 @@ export function SignatureDishes({ data }: { data?: SectionCmsData } = {}) {
   const desktopColumns = Math.min(6, Math.max(2, cmsNumber(data, "desktopColumns", 4)));
   const mobileColumns = Math.min(2, Math.max(1, cmsNumber(data, "mobileColumns", 2)));
   const flags = sectionCardFlags(data);
-  const sorted = selectSectionProducts(products, data);
+  const sorted = selectSectionProducts(products, data, collectionsBySlug);
   const useFeaturedLayout = desktopColumns <= 2 && sorted.length >= 2;
   const [featured, ...rest] = sorted;
 

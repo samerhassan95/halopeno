@@ -21,9 +21,23 @@ type FormData = z.infer<typeof schema>;
 export default function ContactPage() {
   const { register, handleSubmit, formState, reset } = useForm<FormData>({ resolver: zodResolver(schema) });
 
-  const onSubmit = handleSubmit(() => {
-    toast.success("Message sent! We'll get back to you within 24 hours.");
-    reset();
+  const onSubmit = handleSubmit(async (values) => {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api/v1"}/storefront/contact`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(values),
+        }
+      );
+      const json = await res.json();
+      if (!res.ok || !json.ok) throw new Error(json.message || "Failed to send");
+      toast.success("Message sent! We'll get back to you within 24 hours.");
+      reset();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not send message");
+    }
   });
 
   return (

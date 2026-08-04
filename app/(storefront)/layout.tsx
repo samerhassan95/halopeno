@@ -4,12 +4,13 @@ import { StorefrontFooter } from "@/components/storefront/footer";
 import { CartDrawer } from "@/components/storefront/cart-drawer";
 import { MobileBottomNav } from "@/components/storefront/mobile-bottom-nav";
 import { CatalogLoader } from "@/components/storefront/catalog-loader";
+import { CommerceConfigLoader } from "@/components/storefront/commerce-config-loader";
+import { MaintenanceGate } from "@/components/storefront/maintenance-gate";
 import { StorefrontPopupHost } from "@/components/storefront/popup-host";
 import { StorefrontI18nProvider } from "@/lib/storefront/i18n/context";
 import { API_URL } from "@/lib/api/client";
 import { buildStorefrontStyleVars, type GlobalStylesConfig } from "@/lib/storefront/global-styles";
 import { getActiveTheme } from "@/lib/storefront/active-theme";
-import { ElectroHubFooter, ElectroHubHeader } from "@/components/storefront/themes/electrohub";
 import {
   fetchFooterConfig,
   fetchHeaderConfig,
@@ -33,6 +34,29 @@ async function getGlobalStyleOverrides(): Promise<Partial<GlobalStylesConfig> | 
   } catch {
     return null;
   }
+}
+
+async function getSiteMeta(): Promise<{ title?: string; description?: string } | null> {
+  try {
+    const res = await fetch(`${API_URL}/storefront/site-settings`, { cache: "no-store" });
+    if (!res.ok) return null;
+    const json = await res.json();
+    const value = json.value as { metaTitle?: string; metaDescription?: string; siteName?: string; tagline?: string };
+    return {
+      title: value.metaTitle || (value.siteName ? `${value.siteName}${value.tagline ? ` | ${value.tagline}` : ""}` : undefined),
+      description: value.metaDescription || undefined,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  const site = await getSiteMeta();
+  return {
+    title: site?.title || metadata.title,
+    description: site?.description || metadata.description,
+  };
 }
 
 export default async function StorefrontLayout({ children }: { children: React.ReactNode }) {
@@ -69,17 +93,12 @@ export default async function StorefrontLayout({ children }: { children: React.R
       )}
       <StorefrontI18nProvider>
         <CatalogLoader />
-        {isElectroHub ? (
-          <ElectroHubHeader />
-        ) : (
-          <StorefrontHeader navLinks={headerMenu.length ? headerMenu : undefined} config={headerConfig} />
-        )}
-        <main className="pb-20 md:pb-0">{children}</main>
-        {isElectroHub ? (
-          <ElectroHubFooter />
-        ) : (
-          <StorefrontFooter menuLinks={footerMenu.length ? footerMenu : undefined} config={footerConfig} />
-        )}
+        <CommerceConfigLoader />
+        <StorefrontHeader navLinks={headerMenu.length ? headerMenu : undefined} config={headerConfig} />
+        <main className="pb-20 md:pb-0">
+          <MaintenanceGate>{children}</MaintenanceGate>
+        </main>
+        <StorefrontFooter menuLinks={footerMenu.length ? footerMenu : undefined} config={footerConfig} />
         <CartDrawer />
         <MobileBottomNav />
         <StorefrontPopupHost />
