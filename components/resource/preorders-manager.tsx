@@ -1,5 +1,7 @@
 "use client";
 
+import { adminTr } from "@/lib/i18n/admin-tr";
+
 import * as React from "react";
 import Link from "next/link";
 import {
@@ -216,8 +218,7 @@ const CHART_COLORS = ["var(--color-chart-1)", "var(--color-chart-2)", "var(--col
 // Component
 // ---------------------------------------------------------------------------
 
-export function PreordersManager() {
-  const [details, setDetails] = React.useState<PreorderDetail[]>([]);
+export function PreordersManager(){const [details, setDetails] = React.useState<PreorderDetail[]>([]);
   const [orders, setOrders] = React.useState<Order[]>([]);
   const [products, setProducts] = React.useState<Product[]>([]);
   const [warehouses, setWarehouses] = React.useState<Warehouse[]>([]);
@@ -417,7 +418,7 @@ export function PreordersManager() {
     <div className="mx-auto flex max-w-[1900px] flex-col gap-5 pb-12">
       <header className="sticky top-0 z-20 flex flex-col gap-3 bg-background/95 py-2 backdrop-blur lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold sm:text-3xl">Preorders</h1>
+          <h1 className="font-display text-2xl font-bold sm:text-3xl">{adminTr("Preorders")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">Manage customer preorders before products become available.</p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -445,7 +446,7 @@ export function PreordersManager() {
 
       <Tabs value={mainTab} onValueChange={setMainTab}>
         <TabsList>
-          <TabsTrigger value="preorders">Preorders</TabsTrigger>
+          <TabsTrigger value="preorders">{adminTr("Preorders")}</TabsTrigger>
           <TabsTrigger value="analytics">Analytics & Forecasting</TabsTrigger>
           <TabsTrigger value="audit">Audit Log</TabsTrigger>
           <TabsTrigger value="security">Permissions</TabsTrigger>
@@ -503,7 +504,7 @@ export function PreordersManager() {
               <EmptyState
                 icon={CalendarClock}
                 title="No preorders have been created yet."
-                description="Create a preorder or import existing preorder records."
+                description={adminTr("Create a preorder or import existing preorder records.")}
                 className="py-20"
                 action={
                   <div className="flex gap-2">
@@ -577,7 +578,7 @@ export function PreordersManager() {
                                 <DropdownMenuItem onClick={() => collectBalance(r)}><BadgeDollarSign /> Collect Balance</DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => toast.info(`Notification sent to ${r.order.customer?.email}`)}><Mail /> Send Notification</DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => toast.success(`${r.order.orderNumber} converted to standard order`)}>Convert to Standard Order</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => window.print()}>Print Invoice</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => window.print()}>{adminTr("Print Invoice")}</DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 {fulfillmentStages.map((v) => (
                                   <DropdownMenuItem key={v} onClick={() => transition(r, v)}>{v}</DropdownMenuItem>
@@ -597,7 +598,7 @@ export function PreordersManager() {
             <div className="flex items-center justify-between border-t p-4">
               <span className="text-xs text-muted-foreground">{filtered.length} preorders · Customize and reorder columns</span>
               <div className="flex items-center gap-2">
-                <span className="text-xs">Page {page} of {pages}</span>
+                <span className="text-xs">{adminTr("Page {page} of {pages}", { page: page, pages: pages })}</span>
                 <Button size="icon" variant="outline" disabled={page === 1} onClick={() => setPage((p) => p - 1)}><ChevronLeft /></Button>
                 <Button size="icon" variant="outline" disabled={page === pages} onClick={() => setPage((p) => p + 1)}><ChevronRight /></Button>
               </div>
@@ -710,7 +711,7 @@ function PreorderDrawer({
               <Info label="Max Preorder Quantity" value={row.detail?.maxQuantity ?? "Unlimited"} />
             </div>
             <div className="mt-4 max-w-xs space-y-2">
-              <Label>Assign Warehouse</Label>
+              <Label>{adminTr("Assign Warehouse")}</Label>
               <Select value={m.warehouseId || "none"} onValueChange={(v) => onUpdateMeta(row, { warehouseId: v === "none" ? "" : v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -793,7 +794,7 @@ function CreatePreorderDialog({
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Create Preorder</DialogTitle>
+          <DialogTitle>{adminTr("Create Preorder")}</DialogTitle>
           <DialogDescription>Open a product for preorder ahead of its release date.</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 sm:grid-cols-2">

@@ -37,6 +37,8 @@ import { useResourceList } from "@/lib/hooks/use-resource-list";
 import { api, ApiError } from "@/lib/api/client";
 import { formatCurrency } from "@/lib/utils";
 import { toCsv, downloadCsv } from "@/lib/csv-export";
+import { useI18n } from "@/lib/i18n/context";
+import { useAdminColumnLabel, useAdminPageCopy, useAdminTr } from "@/lib/i18n/admin-tr";
 import type { ResourcePageConfig, ResourceField } from "@/lib/resource-pages";
 
 /** Falls back to an editable field per column when a config has no explicit create/update fields. */
@@ -52,7 +54,13 @@ function fieldsFromColumns(columns: ResourcePageConfig["columns"]): ResourceFiel
 
 type Row = Record<string, unknown>;
 
-function renderCell(row: Row, key: string, type: string | undefined) {
+function renderCell(
+  row: Row,
+  key: string,
+  type: string | undefined,
+  yesLabel: string,
+  noLabel: string
+) {
   const value = row[key];
   if (value === null || value === undefined || value === "") {
     return <span className="text-muted-foreground">—</span>;
@@ -65,7 +73,7 @@ function renderCell(row: Row, key: string, type: string | undefined) {
     case "date":
       return new Date(String(value)).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
     case "boolean":
-      return value ? "Yes" : "No";
+      return value ? yesLabel : noLabel;
     case "badge":
       return <StatusBadge value={value} />;
     default:
@@ -75,6 +83,11 @@ function renderCell(row: Row, key: string, type: string | undefined) {
 
 export function ResourceListPage({ config }: { config: ResourcePageConfig }) {
   const router = useRouter();
+  const { t } = useI18n();
+  const tr = useAdminTr();
+  const colLabel = useAdminColumnLabel();
+  const pageCopy = useAdminPageCopy(config.route, config.title, config.subtitle);
+
   const clientFilter = React.useMemo(() => {
     if (!config.clientFilterKey) return undefined;
     return (row: Row) => String(row[config.clientFilterKey!]) === config.clientFilterValue;
@@ -83,7 +96,20 @@ export function ResourceListPage({ config }: { config: ResourcePageConfig }) {
   const { data, total, totalPages, page, setPage, search, setSearch, loading, error, refetch } =
     useResourceList<Row>(config.endpoint, { clientFilter });
 
-  const editFields = config.updateFields ?? config.createFields ?? fieldsFromColumns(config.columns);
+  const editFields = React.useMemo(() => {
+    const fields = config.updateFields ?? config.createFields ?? fieldsFromColumns(config.columns);
+    return fields.map((field) => ({ ...field, label: colLabel(field.key, field.label) }));
+  }, [config.updateFields, config.createFields, config.columns, colLabel]);
+
+  const createFields = React.useMemo(() => {
+    if (!config.createFields) return undefined;
+    return config.createFields.map((field) => ({ ...field, label: colLabel(field.key, field.label) }));
+  }, [config.createFields, colLabel]);
+
+  const columns = React.useMemo(
+    () => config.columns.map((col) => ({ ...col, label: colLabel(col.key, col.label) })),
+    [config.columns, colLabel]
+  );
 
   const [createOpen, setCreateOpen] = React.useState(false);
   const [viewTarget, setViewTarget] = React.useState<Row | null>(null);
@@ -114,8 +140,8 @@ export function ResourceListPage({ config }: { config: ResourcePageConfig }) {
   }
 
   function exportCsv(rows: Row[]) {
-    downloadCsv(`${config.route.replace(/\//g, "-")}.csv`, toCsv(rows, config.columns));
-    toast.success(`Exported ${rows.length.toLocaleString()} row${rows.length === 1 ? "" : "s"}`);
+    downloadCsv(`${config.route.replace(/\//g, "-")}.csv`, toCsv(rows, columns));
+    toast.success(t("common.exportedOk", { count: rows.length }));
   }
 
   async function handleBulkDelete() {
@@ -132,9 +158,9 @@ export function ResourceListPage({ config }: { config: ResourcePageConfig }) {
     setBulkDeleting(false);
     setSelected(new Set());
     if (failures === 0) {
-      toast.success(`Deleted ${ids.length.toLocaleString()} entries`);
+      toast.success(t("common.deletedOk"));
     } else {
-      toast.error(`Deleted ${ids.length - failures} of ${ids.length}; ${failures} failed`);
+      toast.error(tr(`Deleted ${ids.length - failures} of ${ids.length}; ${failures} failed`));
     }
     refetch();
   }
@@ -143,11 +169,11 @@ export function ResourceListPage({ config }: { config: ResourcePageConfig }) {
     setSubmitting(true);
     try {
       await api.post(config.endpoint, values);
-      toast.success(`${config.title} entry created`);
+      toast.success(t("common.createdOk", { title: pageCopy.title }));
       setCreateOpen(false);
       refetch();
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Failed to create");
+      toast.error(err instanceof ApiError ? err.message : t("common.createFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -158,11 +184,11 @@ export function ResourceListPage({ config }: { config: ResourcePageConfig }) {
     setSubmitting(true);
     try {
       await api.patch(`${config.endpoint}/${editTarget.id}`, values);
-      toast.success("Changes saved");
+      toast.success(t("common.changesSaved"));
       setEditTarget(null);
       refetch();
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Failed to save changes");
+      toast.error(err instanceof ApiError ? err.message : t("common.saveFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -172,10 +198,10 @@ export function ResourceListPage({ config }: { config: ResourcePageConfig }) {
     if (!deleteTarget) return;
     try {
       await api.delete(`${config.endpoint}/${deleteTarget.id}`);
-      toast.success("Deleted successfully");
+      toast.success(t("common.deletedOk"));
       refetch();
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Failed to delete");
+      toast.error(err instanceof ApiError ? err.message : t("common.deleteFailed"));
     } finally {
       setDeleteTarget(null);
     }
@@ -184,27 +210,27 @@ export function ResourceListPage({ config }: { config: ResourcePageConfig }) {
   return (
     <div className="mx-auto flex max-w-[1600px] flex-col gap-4">
       <div>
-        <h1 className="font-display text-2xl font-bold tracking-tight">{config.title}</h1>
-        {config.subtitle && <p className="mt-0.5 text-sm text-muted-foreground">{config.subtitle}</p>}
+        <h1 className="font-display text-2xl font-bold tracking-tight">{pageCopy.title}</h1>
+        {pageCopy.subtitle && <p className="mt-0.5 text-sm text-muted-foreground">{pageCopy.subtitle}</p>}
       </div>
 
       {error && (
         <div className="flex items-center gap-2 rounded-[10px] border border-warning/30 bg-warning/10 px-4 py-2.5 text-sm text-[#92640a] dark:text-warning">
           <WifiOff className="size-4 shrink-0" />
-          Live API unreachable ({error}).
+          {t("common.apiUnreachable", { error })}
         </div>
       )}
 
       <Card>
         <CardHeader className="flex-row flex-wrap items-center justify-between gap-3 pb-4">
           <div>
-            <CardTitle>{config.title}</CardTitle>
-            <CardDescription className="mt-1">{total.toLocaleString()} total</CardDescription>
+            <CardTitle>{pageCopy.title}</CardTitle>
+            <CardDescription className="mt-1">{t("common.total", { count: total.toLocaleString() })}</CardDescription>
           </div>
           <CardAction className="flex items-center gap-2">
             <Button size="sm" variant="outline" className="gap-2" onClick={() => exportCsv(data)} disabled={data.length === 0}>
               <Download className="size-4" />
-              Export CSV
+              {t("common.exportCsv")}
             </Button>
             {config.createFields && (
               <Button
@@ -213,7 +239,7 @@ export function ResourceListPage({ config }: { config: ResourcePageConfig }) {
                 onClick={() => (config.detailRoute ? router.push(`/admin/${config.detailRoute}/new`) : setCreateOpen(true))}
               >
                 <Plus className="size-4" />
-                Add new
+                {t("common.addNew")}
               </Button>
             )}
           </CardAction>
@@ -225,13 +251,13 @@ export function ResourceListPage({ config }: { config: ResourcePageConfig }) {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search"
+              placeholder={t("common.search")}
               className="h-9 ps-8 text-sm"
             />
           </div>
           {selected.size > 0 && (
             <div className="flex items-center gap-2 rounded-[10px] border border-border bg-muted/50 px-3 py-1.5 text-sm">
-              <span className="font-medium">{selected.size.toLocaleString()} selected</span>
+              <span className="font-medium">{t("common.selected", { count: selected.size.toLocaleString() })}</span>
               <Button
                 size="sm"
                 variant="outline"
@@ -239,7 +265,7 @@ export function ResourceListPage({ config }: { config: ResourcePageConfig }) {
                 onClick={() => exportCsv(data.filter((row) => selected.has(row.id as string)))}
               >
                 <Download className="size-3.5" />
-                Export selected
+                {t("common.exportSelected")}
               </Button>
               <Button
                 size="sm"
@@ -248,27 +274,27 @@ export function ResourceListPage({ config }: { config: ResourcePageConfig }) {
                 onClick={() => setBulkDeleteOpen(true)}
               >
                 <Trash2 className="size-3.5" />
-                Delete selected
+                {t("common.deleteSelected")}
               </Button>
             </div>
           )}
         </div>
 
         {loading ? (
-          <TableSkeleton rows={6} cols={config.columns.length + 1} />
+          <TableSkeleton rows={6} cols={columns.length + 1} />
         ) : data.length === 0 ? (
-          <EmptyState title="No results found" description="Try adjusting your search, or add a new entry." />
+          <EmptyState title={t("common.noResults")} description={t("common.noResultsHint")} />
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-10">
-                  <Checkbox checked={allSelected} onCheckedChange={(checked) => toggleAll(checked === true)} aria-label="Select all" />
+                  <Checkbox checked={allSelected} onCheckedChange={(checked) => toggleAll(checked === true)} aria-label={t("common.selectAll")} />
                 </TableHead>
-                {config.columns.map((col) => (
+                {columns.map((col) => (
                   <TableHead key={col.key}>{col.label}</TableHead>
                 ))}
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="text-end">{t("common.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -278,13 +304,15 @@ export function ResourceListPage({ config }: { config: ResourcePageConfig }) {
                     <Checkbox
                       checked={selected.has(row.id as string)}
                       onCheckedChange={(checked) => toggleRow(row.id as string, checked === true)}
-                      aria-label="Select row"
+                      aria-label={t("common.selectRow")}
                     />
                   </TableCell>
-                  {config.columns.map((col) => (
-                    <TableCell key={col.key}>{renderCell(row, col.key, col.type)}</TableCell>
+                  {columns.map((col) => (
+                    <TableCell key={col.key}>
+                      {renderCell(row, col.key, col.type, t("common.yes"), t("common.no"))}
+                    </TableCell>
                   ))}
-                  <TableCell className="text-right">
+                  <TableCell className="text-end">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon-sm">
@@ -297,17 +325,17 @@ export function ResourceListPage({ config }: { config: ResourcePageConfig }) {
                             config.detailRoute ? router.push(`/admin/${config.detailRoute}/${row.id}`) : setViewTarget(row)
                           }
                         >
-                          <Eye /> View
+                          <Eye /> {t("common.view")}
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() =>
                             config.detailRoute ? router.push(`/admin/${config.detailRoute}/${row.id}`) : setEditTarget(row)
                           }
                         >
-                          <Pencil /> Edit
+                          <Pencil /> {t("common.edit")}
                         </DropdownMenuItem>
                         <DropdownMenuItem variant="destructive" onClick={() => setDeleteTarget(row)}>
-                          <Trash2 /> Delete
+                          <Trash2 /> {t("common.delete")}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -321,11 +349,15 @@ export function ResourceListPage({ config }: { config: ResourcePageConfig }) {
         {!loading && data.length > 0 && (
           <div className="flex items-center justify-between gap-3 border-t border-border p-4">
             <p className="text-xs text-muted-foreground">
-              Page {page} of {totalPages} — {total.toLocaleString()} total
+              {t("common.pageOf", {
+                page,
+                totalPages,
+                total: total.toLocaleString(),
+              })}
             </p>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
-                Previous
+                {t("common.previous")}
               </Button>
               <Button
                 variant="outline"
@@ -333,39 +365,41 @@ export function ResourceListPage({ config }: { config: ResourcePageConfig }) {
                 disabled={page === totalPages}
                 onClick={() => setPage((p) => p + 1)}
               >
-                Next
+                {t("common.next")}
               </Button>
             </div>
           </div>
         )}
       </Card>
 
-      {config.route === "inventory/warehouses" ? <WarehouseDialog open={createOpen} onOpenChange={setCreateOpen} editing={null} warehouses={data as unknown as WarehouseItem[]} onSaved={() => { setCreateOpen(false); refetch(); }} /> : config.route === "brands" ? <BrandDialog open={createOpen} onOpenChange={setCreateOpen} editing={null} brands={data as unknown as BrandItem[]} onSaved={() => { setCreateOpen(false); refetch(); }} /> : config.route === "categories" ? <CategoryDialog open={createOpen} onOpenChange={setCreateOpen} editing={null} categories={data as unknown as CategoryItem[]} onSaved={() => { setCreateOpen(false); refetch(); }} /> : config.route === "collections" ? <CollectionDialog open={createOpen} onOpenChange={setCreateOpen} editing={null} collections={data as unknown as CollectionItem[]} onSaved={() => { setCreateOpen(false); refetch(); }} /> : config.route === "attributes" ? <AttributeDialog open={createOpen} onOpenChange={setCreateOpen} editing={null} attributes={data as unknown as AttributeItem[]} onSaved={() => { setCreateOpen(false); refetch(); }} /> : config.createFields && (
+      {config.route === "inventory/warehouses" ? <WarehouseDialog open={createOpen} onOpenChange={setCreateOpen} editing={null} warehouses={data as unknown as WarehouseItem[]} onSaved={() => { setCreateOpen(false); refetch(); }} /> : config.route === "brands" ? <BrandDialog open={createOpen} onOpenChange={setCreateOpen} editing={null} brands={data as unknown as BrandItem[]} onSaved={() => { setCreateOpen(false); refetch(); }} /> : config.route === "categories" ? <CategoryDialog open={createOpen} onOpenChange={setCreateOpen} editing={null} categories={data as unknown as CategoryItem[]} onSaved={() => { setCreateOpen(false); refetch(); }} /> : config.route === "collections" ? <CollectionDialog open={createOpen} onOpenChange={setCreateOpen} editing={null} collections={data as unknown as CollectionItem[]} onSaved={() => { setCreateOpen(false); refetch(); }} /> : config.route === "attributes" ? <AttributeDialog open={createOpen} onOpenChange={setCreateOpen} editing={null} attributes={data as unknown as AttributeItem[]} onSaved={() => { setCreateOpen(false); refetch(); }} /> : createFields && (
         <ResourceFormDialog
           open={createOpen}
           onOpenChange={setCreateOpen}
-          title={`Add ${config.title}`}
-          fields={config.createFields}
+          title={t("common.addTitle", { title: pageCopy.title })}
+          fields={createFields}
           submitting={submitting}
           onSubmit={handleCreate}
         />
       )}
 
-      {config.route === "inventory/warehouses" ? <WarehouseDialog open={!!editTarget} onOpenChange={(open) => !open && setEditTarget(null)} editing={editTarget as unknown as WarehouseItem | null} warehouses={data as unknown as WarehouseItem[]} onSaved={() => { setEditTarget(null); refetch(); }} /> : config.route === "brands" ? <BrandDialog open={!!editTarget} onOpenChange={(open) => !open && setEditTarget(null)} editing={editTarget as unknown as BrandItem | null} brands={data as unknown as BrandItem[]} onSaved={() => { setEditTarget(null); refetch(); }} /> : config.route === "categories" ? <CategoryDialog open={!!editTarget} onOpenChange={(open) => !open && setEditTarget(null)} editing={editTarget as unknown as CategoryItem | null} categories={data as unknown as CategoryItem[]} onSaved={() => { setEditTarget(null); refetch(); }} /> : config.route === "collections" ? <CollectionDialog open={!!editTarget} onOpenChange={(open) => !open && setEditTarget(null)} editing={editTarget as unknown as CollectionItem | null} collections={data as unknown as CollectionItem[]} onSaved={() => { setEditTarget(null); refetch(); }} /> : config.route === "attributes" ? <AttributeDialog open={!!editTarget} onOpenChange={(open) => !open && setEditTarget(null)} editing={editTarget as unknown as AttributeItem | null} attributes={data as unknown as AttributeItem[]} onSaved={() => { setEditTarget(null); refetch(); }} /> : <ResourceFormDialog
-        open={!!editTarget}
-        onOpenChange={(open) => !open && setEditTarget(null)}
-        title={`Edit ${config.title}`}
-        fields={editFields}
-        initialValues={editTarget ?? undefined}
-        submitting={submitting}
-        onSubmit={handleUpdate}
-      />}
+      {config.route === "inventory/warehouses" ? <WarehouseDialog open={!!editTarget} onOpenChange={(open) => !open && setEditTarget(null)} editing={editTarget as unknown as WarehouseItem | null} warehouses={data as unknown as WarehouseItem[]} onSaved={() => { setEditTarget(null); refetch(); }} /> : config.route === "brands" ? <BrandDialog open={!!editTarget} onOpenChange={(open) => !open && setEditTarget(null)} editing={editTarget as unknown as BrandItem | null} brands={data as unknown as BrandItem[]} onSaved={() => { setEditTarget(null); refetch(); }} /> : config.route === "categories" ? <CategoryDialog open={!!editTarget} onOpenChange={(open) => !open && setEditTarget(null)} editing={editTarget as unknown as CategoryItem | null} categories={data as unknown as CategoryItem[]} onSaved={() => { setEditTarget(null); refetch(); }} /> : config.route === "collections" ? <CollectionDialog open={!!editTarget} onOpenChange={(open) => !open && setEditTarget(null)} editing={editTarget as unknown as CollectionItem | null} collections={data as unknown as CollectionItem[]} onSaved={() => { setEditTarget(null); refetch(); }} /> : config.route === "attributes" ? <AttributeDialog open={!!editTarget} onOpenChange={(open) => !open && setEditTarget(null)} editing={editTarget as unknown as AttributeItem | null} attributes={data as unknown as AttributeItem[]} onSaved={() => { setEditTarget(null); refetch(); }} /> : (
+        <ResourceFormDialog
+          open={!!editTarget}
+          onOpenChange={(open) => !open && setEditTarget(null)}
+          title={t("common.editTitle", { title: pageCopy.title })}
+          fields={editFields}
+          initialValues={editTarget ?? undefined}
+          submitting={submitting}
+          onSubmit={handleUpdate}
+        />
+      )}
 
       <ResourceViewDialog
         open={!!viewTarget}
         onOpenChange={(open) => !open && setViewTarget(null)}
-        title={config.title}
-        columns={config.columns}
+        title={pageCopy.title}
+        columns={columns}
         row={viewTarget}
         onEdit={() => viewTarget && setEditTarget(viewTarget)}
       />
@@ -373,18 +407,18 @@ export function ResourceListPage({ config }: { config: ResourcePageConfig }) {
       <ConfirmationDialog
         open={!!deleteTarget}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
-        title="Delete this entry?"
-        description="This action cannot be undone."
-        confirmLabel="Delete"
+        title={t("common.deleteEntry")}
+        description={t("common.cannotUndo")}
+        confirmLabel={t("common.delete")}
         onConfirm={handleDelete}
       />
 
       <ConfirmationDialog
         open={bulkDeleteOpen}
         onOpenChange={setBulkDeleteOpen}
-        title={`Delete ${selected.size.toLocaleString()} entries?`}
-        description="This action cannot be undone."
-        confirmLabel={bulkDeleting ? "Deleting…" : "Delete all"}
+        title={t("common.deleteEntries", { count: selected.size.toLocaleString() })}
+        description={t("common.cannotUndo")}
+        confirmLabel={bulkDeleting ? t("common.deleting") : t("common.deleteAll")}
         onConfirm={handleBulkDelete}
       />
     </div>

@@ -1,5 +1,7 @@
 "use client";
 
+import { adminTr } from "@/lib/i18n/admin-tr";
+
 import * as React from "react";
 import {
   HandCoins,
@@ -139,8 +141,7 @@ const CHART_COLORS = ["var(--color-chart-1)", "var(--color-chart-2)", "var(--col
 // Component
 // ---------------------------------------------------------------------------
 
-export function PayoutRequestsManager() {
-  const [payouts, setPayouts] = React.useState<Payout[]>([]);
+export function PayoutRequestsManager(){const [payouts, setPayouts] = React.useState<Payout[]>([]);
   const [sellers, setSellers] = React.useState<Seller[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -310,13 +311,13 @@ export function PayoutRequestsManager() {
     <div className="mx-auto flex max-w-[1900px] flex-col gap-5 pb-12">
       <header className="sticky top-0 z-20 flex flex-col gap-3 bg-background/95 py-2 backdrop-blur lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold sm:text-3xl">Payout Requests</h1>
+          <h1 className="font-display text-2xl font-bold sm:text-3xl">{adminTr("Payout Requests")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">Manage seller withdrawal requests, approvals, payment processing, and financial reconciliation.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button onClick={() => (selected.size ? bulk("Bulk Pay") : setCreateOpen(true))}><BadgeDollarSign /> Process Payouts</Button>
           <Button variant="outline" onClick={() => toast.info("Scheduled payment window opened")}><CalendarClock /> Schedule Payments</Button>
-          <Button variant="outline" onClick={() => toast.info("Payout import queued")}>Import Requests</Button>
+          <Button variant="outline" onClick={() => toast.info("Payout import queued")}>{adminTr("Import Requests")}</Button>
           <Button variant="outline" onClick={exportCsv}><Download /> Export</Button>
           <Button variant="outline" onClick={() => void load()}><RefreshCw /> Refresh</Button>
         </div>
@@ -335,7 +336,7 @@ export function PayoutRequestsManager() {
 
       <Tabs value={mainTab} onValueChange={setMainTab}>
         <TabsList>
-          <TabsTrigger value="payouts">Payout Requests</TabsTrigger>
+          <TabsTrigger value="payouts">{adminTr("Payout Requests")}</TabsTrigger>
           <TabsTrigger value="analytics">Analytics & Reports</TabsTrigger>
           <TabsTrigger value="audit">Audit Log</TabsTrigger>
           <TabsTrigger value="security">Permissions</TabsTrigger>
@@ -350,7 +351,7 @@ export function PayoutRequestsManager() {
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="xl:w-44"><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value="all">All statuses</SelectItem>{payoutStages.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                <SelectContent><SelectItem value="all">{adminTr("All statuses")}</SelectItem>{payoutStages.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
               <Select value={methodFilter} onValueChange={setMethodFilter}>
                 <SelectTrigger className="xl:w-40"><SelectValue /></SelectTrigger>
@@ -379,7 +380,7 @@ export function PayoutRequestsManager() {
                 title="No payout requests have been submitted yet."
                 description="Seller withdrawal requests will appear here."
                 className="py-20"
-                action={<div className="flex gap-2"><Button onClick={() => setCreateOpen(true)}><Plus /> Process Payouts</Button><Button variant="outline" onClick={() => toast.info("Payout import queued")}>Import Requests</Button></div>}
+                action={<div className="flex gap-2"><Button onClick={() => setCreateOpen(true)}><Plus /> Process Payouts</Button><Button variant="outline" onClick={() => toast.info("Payout import queued")}>{adminTr("Import Requests")}</Button></div>}
               />
             ) : (
               <div className="overflow-x-auto">
@@ -434,7 +435,7 @@ export function PayoutRequestsManager() {
             <div className="flex items-center justify-between border-t p-4">
               <span className="text-xs text-muted-foreground">{rows.length} payout requests · Customize and reorder columns</span>
               <div className="flex items-center gap-2">
-                <span className="text-xs">Page {page} of {pages}</span>
+                <span className="text-xs">{adminTr("Page {page} of {pages}", { page: page, pages: pages })}</span>
                 <Button size="icon" variant="outline" disabled={page === 1} onClick={() => setPage((p) => p - 1)}><ChevronLeft /></Button>
                 <Button size="icon" variant="outline" disabled={page === pages} onClick={() => setPage((p) => p + 1)}><ChevronRight /></Button>
               </div>
@@ -550,7 +551,7 @@ function PayoutDrawer({
             <div className="mt-4 flex flex-wrap gap-2">
               <Button onClick={() => onTransition(payout, "Approved")}><CheckCircle2 /> Approve</Button>
               <Button variant="destructive" onClick={() => onTransition(payout, "Rejected")}>Reject</Button>
-              <Button variant="outline" onClick={() => onTransition(payout, "Paid")}>Mark as Paid</Button>
+              <Button variant="outline" onClick={() => onTransition(payout, "Paid")}>{adminTr("Mark as Paid")}</Button>
               <Button variant="outline" onClick={() => onUpdateMeta(payout, { reconciliationStatus: "Reconciled" })}>Mark Reconciled</Button>
             </div>
           </TabsContent>
@@ -672,7 +673,7 @@ function Analytics({
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="p-5">
-          <h3 className="font-semibold">Payment Methods</h3>
+          <h3 className="font-semibold">{adminTr("Payment Methods")}</h3>
           <div className="mt-4 h-[240px] w-full">
             <ChartMount>
               <ResponsiveContainer width="100%" height="100%">

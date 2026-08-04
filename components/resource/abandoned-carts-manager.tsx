@@ -1,5 +1,7 @@
 "use client";
 
+import { adminTr } from "@/lib/i18n/admin-tr";
+
 import * as React from "react";
 import {
   ShoppingBag,
@@ -182,8 +184,7 @@ const CHART_COLORS = ["var(--color-chart-1)", "var(--color-chart-2)", "var(--col
 // Component
 // ---------------------------------------------------------------------------
 
-export function AbandonedCartsManager() {
-  const [carts, setCarts] = React.useState<AbandonedCart[]>([]);
+export function AbandonedCartsManager(){const [carts, setCarts] = React.useState<AbandonedCart[]>([]);
   const [customers, setCustomers] = React.useState<Customer[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -373,7 +374,7 @@ export function AbandonedCartsManager() {
     <div className="mx-auto flex max-w-[1900px] flex-col gap-5 pb-12">
       <header className="sticky top-0 z-20 flex flex-col gap-3 bg-background/95 py-2 backdrop-blur lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold sm:text-3xl">Abandoned Carts</h1>
+          <h1 className="font-display text-2xl font-bold sm:text-3xl">{adminTr("Abandoned Carts")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">Monitor abandoned shopping carts and recover lost sales using automated recovery workflows.</p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -398,7 +399,7 @@ export function AbandonedCartsManager() {
 
       <Tabs value={mainTab} onValueChange={setMainTab}>
         <TabsList>
-          <TabsTrigger value="carts">Abandoned Carts</TabsTrigger>
+          <TabsTrigger value="carts">{adminTr("Abandoned Carts")}</TabsTrigger>
           <TabsTrigger value="analytics">Analytics & Reports</TabsTrigger>
           <TabsTrigger value="audit">Audit Log</TabsTrigger>
           <TabsTrigger value="security">Permissions</TabsTrigger>
@@ -530,7 +531,7 @@ export function AbandonedCartsManager() {
             <div className="flex items-center justify-between border-t p-4">
               <span className="text-xs text-muted-foreground">{rows.length} abandoned carts · Customize and reorder columns</span>
               <div className="flex items-center gap-2">
-                <span className="text-xs">Page {page} of {pages}</span>
+                <span className="text-xs">{adminTr("Page {page} of {pages}", { page: page, pages: pages })}</span>
                 <Button size="icon" variant="outline" disabled={page === 1} onClick={() => setPage((p) => p - 1)}><ChevronLeft /></Button>
                 <Button size="icon" variant="outline" disabled={page === pages} onClick={() => setPage((p) => p + 1)}><ChevronRight /></Button>
               </div>

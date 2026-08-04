@@ -1,4 +1,6 @@
 "use client";
+
+import { adminTr } from "@/lib/i18n/admin-tr";
 /* eslint-disable react-hooks/purity, react-hooks/exhaustive-deps, @typescript-eslint/no-unused-expressions, prefer-const */
 import * as React from "react";
 import {
@@ -174,8 +176,7 @@ function hexHsl(hex: string) {
   }
   return `${Math.round(h * 360)}°, ${Math.round(s * 100)}%, ${Math.round(l * 100)}%`;
 }
-export function AttributeValuesManager() {
-  const [values, setValues] = React.useState<ValueRow[]>([]),
+export function AttributeValuesManager(){const [values, setValues] = React.useState<ValueRow[]>([]),
     [attributes, setAttributes] = React.useState<Attribute[]>([]),
     [loading, setLoading] = React.useState(true),
     [error, setError] = React.useState<string | null>(null),
@@ -574,7 +575,7 @@ export function AttributeValuesManager() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="all">{adminTr("All statuses")}</SelectItem>
                 {["active", "hidden", "archived"].map((v) => (
                   <SelectItem key={v} value={v}>
                     {v}
@@ -698,7 +699,7 @@ export function AttributeValuesManager() {
           <EmptyState
             icon={Layers3}
             title="No attribute values found"
-            description="Create a reusable value or adjust your filters."
+            description={adminTr("Create a reusable value or adjust your filters.")}
             action={
               <Button onClick={() => openForm()}>
                 <Plus />
@@ -957,7 +958,7 @@ export function AttributeValuesManager() {
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xs">
-              Page {page} of {pages}
+              {adminTr("Page {page} of {pages}", { page: page, pages: pages })}
             </span>
             <Button
               size="icon"

@@ -1,5 +1,7 @@
 "use client";
 
+import { adminTr } from "@/lib/i18n/admin-tr";
+
 import * as React from "react";
 import {
   Percent,
@@ -157,8 +159,7 @@ const CHART_COLORS = ["var(--color-chart-1)", "var(--color-chart-2)", "var(--col
 // Component
 // ---------------------------------------------------------------------------
 
-export function ShippingRatesManager() {
-  const [rates, setRates] = React.useState<Rate[]>([]);
+export function ShippingRatesManager(){const [rates, setRates] = React.useState<Rate[]>([]);
   const [zones, setZones] = React.useState<Zone[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -331,7 +332,7 @@ export function ShippingRatesManager() {
     <div className="mx-auto flex max-w-[1900px] flex-col gap-5 pb-12">
       <header className="sticky top-0 z-20 flex flex-col gap-3 bg-background/95 py-2 backdrop-blur lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold sm:text-3xl">Shipping Rates</h1>
+          <h1 className="font-display text-2xl font-bold sm:text-3xl">{adminTr("Shipping Rates")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">Configure shipping prices, delivery rules, carrier costs, and pricing strategies for every shipping zone.</p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -355,7 +356,7 @@ export function ShippingRatesManager() {
 
       <Tabs value={mainTab} onValueChange={setMainTab}>
         <TabsList>
-          <TabsTrigger value="rates">Shipping Rates</TabsTrigger>
+          <TabsTrigger value="rates">{adminTr("Shipping Rates")}</TabsTrigger>
           <TabsTrigger value="analytics">Analytics & Reports</TabsTrigger>
           <TabsTrigger value="audit">Audit Log</TabsTrigger>
           <TabsTrigger value="security">Permissions</TabsTrigger>
@@ -370,7 +371,7 @@ export function ShippingRatesManager() {
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="xl:w-36"><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value="all">All statuses</SelectItem><SelectItem value="Active">Active</SelectItem><SelectItem value="Inactive">Inactive</SelectItem></SelectContent>
+                <SelectContent><SelectItem value="all">{adminTr("All statuses")}</SelectItem><SelectItem value="Active">Active</SelectItem><SelectItem value="Inactive">Inactive</SelectItem></SelectContent>
               </Select>
               <Select value={zoneFilter} onValueChange={setZoneFilter}>
                 <SelectTrigger className="xl:w-44"><SelectValue /></SelectTrigger>
@@ -403,7 +404,7 @@ export function ShippingRatesManager() {
                 title="No shipping rates have been configured yet."
                 description="Add a shipping rate or import your existing pricing rules."
                 className="py-20"
-                action={<div className="flex gap-2"><Button onClick={() => setCreateOpen(true)}><Plus /> Add Shipping Rate</Button><Button variant="outline" onClick={() => toast.info("Rate import queued")}>Import Shipping Rates</Button></div>}
+                action={<div className="flex gap-2"><Button onClick={() => setCreateOpen(true)}><Plus /> Add Shipping Rate</Button><Button variant="outline" onClick={() => toast.info("Rate import queued")}>{adminTr("Import Shipping Rates")}</Button></div>}
               />
             ) : (
               <div className="overflow-x-auto">
@@ -453,7 +454,7 @@ export function ShippingRatesManager() {
             <div className="flex items-center justify-between border-t p-4">
               <span className="text-xs text-muted-foreground">{rows.length} shipping rates · Customize and reorder columns</span>
               <div className="flex items-center gap-2">
-                <span className="text-xs">Page {page} of {pages}</span>
+                <span className="text-xs">{adminTr("Page {page} of {pages}", { page: page, pages: pages })}</span>
                 <Button size="icon" variant="outline" disabled={page === 1} onClick={() => setPage((p) => p - 1)}><ChevronLeft /></Button>
                 <Button size="icon" variant="outline" disabled={page === pages} onClick={() => setPage((p) => p + 1)}><ChevronRight /></Button>
               </div>
@@ -621,7 +622,7 @@ function CreateRateDialog({
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-lg">
-        <DialogHeader><DialogTitle>Add Shipping Rate</DialogTitle><DialogDescription>Create a pricing rule for a shipping zone.</DialogDescription></DialogHeader>
+        <DialogHeader><DialogTitle>{adminTr("Add Shipping Rate")}</DialogTitle><DialogDescription>{adminTr("Create a pricing rule for a shipping zone.")}</DialogDescription></DialogHeader>
         <div className="grid gap-4">
           <div>
             <Label>Shipping Zone</Label>

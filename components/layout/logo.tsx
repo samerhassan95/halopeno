@@ -25,7 +25,7 @@ export function LogoMark({ className }: { className?: string }) {
 export function LogoWordmark({ className }: { className?: string }) {
   return (
     <span className={cn("font-display font-bold tracking-tight text-[17px]", className)}>
-      Vantage
+      Halopeno
     </span>
   );
 }

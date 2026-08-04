@@ -1,5 +1,7 @@
 "use client";
 
+import { adminTr } from "@/lib/i18n/admin-tr";
+
 import * as React from "react";
 import Link from "next/link";
 import {
@@ -278,8 +280,7 @@ const CHART_COLORS = [
 // Component
 // ---------------------------------------------------------------------------
 
-export function RefundsManager() {
-  const [refunds, setRefunds] = React.useState<Refund[]>([]);
+export function RefundsManager(){const [refunds, setRefunds] = React.useState<Refund[]>([]);
   const [orders, setOrders] = React.useState<Order[]>([]);
   const [returns, setReturns] = React.useState<ReturnRecord[]>([]);
   const [categoryByProduct, setCategoryByProduct] = React.useState<Record<string, string>>({});
@@ -519,7 +520,7 @@ export function RefundsManager() {
     <div className="mx-auto flex max-w-[1900px] flex-col gap-5 pb-12">
       <header className="sticky top-0 z-20 flex flex-col gap-3 bg-background/95 py-2 backdrop-blur lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold sm:text-3xl">Refunds</h1>
+          <h1 className="font-display text-2xl font-bold sm:text-3xl">{adminTr("Refunds")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Manage customer refund requests, approvals, payment processing, and financial reconciliation.
           </p>
@@ -549,18 +550,18 @@ export function RefundsManager() {
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-8">
         <StatCard icon={Undo2} tone="primary" title="Total Requests" value={formatNumber(total)} />
-        <StatCard icon={Clock3} tone="warning" title="Pending Review" value={formatNumber(pendingReview)} />
+        <StatCard icon={Clock3} tone="warning" title={adminTr("Pending Review")} value={formatNumber(pendingReview)} />
         <StatCard icon={CheckCircle2} tone="success" title="Approved" value={formatNumber(approvedCount)} />
         <StatCard icon={XCircle} tone="destructive" title="Rejected" value={formatNumber(rejectedCount)} />
         <StatCard icon={Loader2} tone="accent" title="Processing" value={formatNumber(processingCount)} />
         <StatCard icon={ShieldCheck} tone="success" title="Completed" value={formatNumber(completedCount)} />
         <StatCard icon={BadgeDollarSign} tone="primary" title="Total Refunded" value={formatCurrency(totalRefundedAmount)} />
-        <StatCard icon={Percent} tone="warning" title="Refund Rate" value={`${refundRate.toFixed(1)}%`} />
+        <StatCard icon={Percent} tone="warning" title={adminTr("Refund Rate")} value={`${refundRate.toFixed(1)}%`} />
       </div>
 
       <Tabs value={mainTab} onValueChange={setMainTab}>
         <TabsList>
-          <TabsTrigger value="refunds">Refunds</TabsTrigger>
+          <TabsTrigger value="refunds">{adminTr("Refunds")}</TabsTrigger>
           <TabsTrigger value="analytics">Analytics & Reports</TabsTrigger>
           <TabsTrigger value="audit">Audit Log</TabsTrigger>
           <TabsTrigger value="security">Permissions</TabsTrigger>
@@ -581,7 +582,7 @@ export function RefundsManager() {
               <Select value={status} onValueChange={setStatus}>
                 <SelectTrigger className="xl:w-44"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All statuses</SelectItem>
+                  <SelectItem value="all">{adminTr("All statuses")}</SelectItem>
                   {workflowStages.map((v) => (
                     <SelectItem key={v} value={v}>{v}</SelectItem>
                   ))}
@@ -773,7 +774,7 @@ export function RefundsManager() {
             <div className="flex items-center justify-between border-t p-4">
               <span className="text-xs text-muted-foreground">{rows.length} refund requests · Customize and reorder columns</span>
               <div className="flex items-center gap-2">
-                <span className="text-xs">Page {page} of {pages}</span>
+                <span className="text-xs">{adminTr("Page {page} of {pages}", { page: page, pages: pages })}</span>
                 <Button size="icon" variant="outline" disabled={page === 1} onClick={() => setPage((p) => p - 1)}><ChevronLeft /></Button>
                 <Button size="icon" variant="outline" disabled={page === pages} onClick={() => setPage((p) => p + 1)}><ChevronRight /></Button>
               </div>
@@ -949,7 +950,7 @@ function RefundDrawer({
                 <Textarea value={approvalNotes} onChange={(e) => setApprovalNotes(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>Rejection Reason</Label>
+                <Label>{adminTr("Rejection Reason")}</Label>
                 <Textarea value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} />
               </div>
             </div>
@@ -1055,7 +1056,7 @@ function CreateRefundDialog({
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Create Manual Refund</DialogTitle>
+          <DialogTitle>{adminTr("Create Manual Refund")}</DialogTitle>
           <DialogDescription>Issue a refund against an existing order.</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 sm:grid-cols-2">

@@ -1,5 +1,7 @@
 "use client";
 
+import { adminTr } from "@/lib/i18n/admin-tr";
+
 import * as React from "react";
 import {
   Truck,
@@ -163,8 +165,7 @@ const CHART_COLORS = ["var(--color-chart-1)", "var(--color-chart-2)", "var(--col
 // Component
 // ---------------------------------------------------------------------------
 
-export function CourierCompaniesManager() {
-  const [carriers, setCarriers] = React.useState<Carrier[]>([]);
+export function CourierCompaniesManager(){const [carriers, setCarriers] = React.useState<Carrier[]>([]);
   const [shipments, setShipments] = React.useState<Shipment[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -346,7 +347,7 @@ export function CourierCompaniesManager() {
     <div className="mx-auto flex max-w-[1900px] flex-col gap-5 pb-12">
       <header className="sticky top-0 z-20 flex flex-col gap-3 bg-background/95 py-2 backdrop-blur lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold sm:text-3xl">Courier Companies</h1>
+          <h1 className="font-display text-2xl font-bold sm:text-3xl">{adminTr("Courier Companies")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">Manage shipping providers, carrier integrations, tracking services, and delivery performance.</p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -372,7 +373,7 @@ export function CourierCompaniesManager() {
 
       <Tabs value={mainTab} onValueChange={setMainTab}>
         <TabsList>
-          <TabsTrigger value="carriers">Courier Companies</TabsTrigger>
+          <TabsTrigger value="carriers">{adminTr("Courier Companies")}</TabsTrigger>
           <TabsTrigger value="analytics">Analytics & Reports</TabsTrigger>
           <TabsTrigger value="audit">Audit Log</TabsTrigger>
           <TabsTrigger value="security">Permissions</TabsTrigger>
@@ -387,7 +388,7 @@ export function CourierCompaniesManager() {
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="xl:w-36"><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value="all">All statuses</SelectItem><SelectItem value="active">Active</SelectItem><SelectItem value="inactive">Inactive</SelectItem></SelectContent>
+                <SelectContent><SelectItem value="all">{adminTr("All statuses")}</SelectItem><SelectItem value="active">Active</SelectItem><SelectItem value="inactive">Inactive</SelectItem></SelectContent>
               </Select>
               <Select value={apiFilter} onValueChange={setApiFilter}>
                 <SelectTrigger className="xl:w-44"><SelectValue /></SelectTrigger>
@@ -457,7 +458,7 @@ export function CourierCompaniesManager() {
                               <DropdownMenuItem onClick={() => void duplicate(c)}><Copy /> Duplicate</DropdownMenuItem>
                               <DropdownMenuItem onClick={() => testApi(c)}><Plug /> Test API Connection</DropdownMenuItem>
                               <DropdownMenuItem onClick={() => syncCarrier(c)}><RefreshCw /> Sync Shipping Rates</DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => syncCarrier(c)}>Sync Tracking</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => syncCarrier(c)}>{adminTr("Sync Tracking")}</DropdownMenuItem>
                               <DropdownMenuItem onClick={() => window.print()}><Printer /> Print Shipping Labels</DropdownMenuItem>
                               <DropdownMenuItem onClick={() => setDrawer(c)}>View Performance</DropdownMenuItem>
                               <DropdownMenuItem onClick={() => void toggleActive(c)}>{c.isActive ? "Disable" : "Enable"}</DropdownMenuItem>
@@ -475,7 +476,7 @@ export function CourierCompaniesManager() {
             <div className="flex items-center justify-between border-t p-4">
               <span className="text-xs text-muted-foreground">{rows.length} courier companies · Customize and reorder columns</span>
               <div className="flex items-center gap-2">
-                <span className="text-xs">Page {page} of {pages}</span>
+                <span className="text-xs">{adminTr("Page {page} of {pages}", { page: page, pages: pages })}</span>
                 <Button size="icon" variant="outline" disabled={page === 1} onClick={() => setPage((p) => p - 1)}><ChevronLeft /></Button>
                 <Button size="icon" variant="outline" disabled={page === pages} onClick={() => setPage((p) => p + 1)}><ChevronRight /></Button>
               </div>
@@ -630,7 +631,7 @@ function CreateCarrierDialog({ open, onClose, onCreate }: { open: boolean; onClo
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-lg">
-        <DialogHeader><DialogTitle>Add Courier Company</DialogTitle><DialogDescription>Connect a new shipping carrier.</DialogDescription></DialogHeader>
+        <DialogHeader><DialogTitle>{adminTr("Add Courier Company")}</DialogTitle><DialogDescription>Connect a new shipping carrier.</DialogDescription></DialogHeader>
         <div className="grid gap-4">
           <Field label="Company Name"><Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} /></Field>
           <Field label="Tracking URL Template"><Input value={form.trackingUrlTemplate} onChange={(e) => setForm((f) => ({ ...f, trackingUrlTemplate: e.target.value }))} placeholder="https://track.example.com/{tracking_number}" /></Field>

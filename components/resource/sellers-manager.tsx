@@ -1,5 +1,7 @@
 "use client";
 
+import { adminTr } from "@/lib/i18n/admin-tr";
+
 import * as React from "react";
 import {
   Store,
@@ -176,8 +178,7 @@ const CHART_COLORS = ["var(--color-chart-1)", "var(--color-chart-2)", "var(--col
 // Component
 // ---------------------------------------------------------------------------
 
-export function SellersManager() {
-  const [sellers, setSellers] = React.useState<Seller[]>([]);
+export function SellersManager(){const [sellers, setSellers] = React.useState<Seller[]>([]);
   const [products, setProducts] = React.useState<Product[]>([]);
   const [orders, setOrders] = React.useState<Order[]>([]);
   const [payouts, setPayouts] = React.useState<Payout[]>([]);
@@ -357,7 +358,7 @@ export function SellersManager() {
     <div className="mx-auto flex max-w-[1900px] flex-col gap-5 pb-12">
       <header className="sticky top-0 z-20 flex flex-col gap-3 bg-background/95 py-2 backdrop-blur lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold sm:text-3xl">Sellers</h1>
+          <h1 className="font-display text-2xl font-bold sm:text-3xl">{adminTr("Sellers")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">Manage marketplace sellers, stores, onboarding, verification, performance, and financial operations.</p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -377,15 +378,15 @@ export function SellersManager() {
         <StatCard icon={Ban} tone="destructive" title="Suspended" value={formatNumber(suspended)} />
         <StatCard icon={UserPlus} tone="accent" title="New This Month" value={formatNumber(newThisMonth)} />
         <StatCard icon={BadgeDollarSign} tone="primary" title="Marketplace Revenue" value={formatCurrency(marketplaceRevenue)} />
-        <StatCard icon={Package} tone="accent" title="Total Products" value={formatNumber(totalProducts)} />
-        <StatCard icon={ShoppingCart} tone="success" title="Total Orders" value={formatNumber(totalOrders)} />
+        <StatCard icon={Package} tone="accent" title={adminTr("Total Products")} value={formatNumber(totalProducts)} />
+        <StatCard icon={ShoppingCart} tone="success" title={adminTr("Total Orders")} value={formatNumber(totalOrders)} />
         <StatCard icon={Star} tone="warning" title="Avg. Rating" value={avgRating.toFixed(1)} />
         <StatCard icon={BadgeDollarSign} tone="warning" title="Pending Payouts" value={formatCurrency(pendingPayouts)} />
       </div>
 
       <Tabs value={mainTab} onValueChange={setMainTab}>
         <TabsList>
-          <TabsTrigger value="sellers">Sellers</TabsTrigger>
+          <TabsTrigger value="sellers">{adminTr("Sellers")}</TabsTrigger>
           <TabsTrigger value="analytics">Analytics & Reports</TabsTrigger>
           <TabsTrigger value="audit">Audit Log</TabsTrigger>
           <TabsTrigger value="security">Permissions</TabsTrigger>
@@ -400,7 +401,7 @@ export function SellersManager() {
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="xl:w-44"><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value="all">All statuses</SelectItem>{statusStages.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                <SelectContent><SelectItem value="all">{adminTr("All statuses")}</SelectItem>{statusStages.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
               <Select value={businessType} onValueChange={setBusinessType}>
                 <SelectTrigger className="xl:w-44"><SelectValue /></SelectTrigger>
@@ -494,7 +495,7 @@ export function SellersManager() {
             <div className="flex items-center justify-between border-t p-4">
               <span className="text-xs text-muted-foreground">{rows.length} sellers · Customize and reorder columns</span>
               <div className="flex items-center gap-2">
-                <span className="text-xs">Page {page} of {pages}</span>
+                <span className="text-xs">{adminTr("Page {page} of {pages}", { page: page, pages: pages })}</span>
                 <Button size="icon" variant="outline" disabled={page === 1} onClick={() => setPage((p) => p - 1)}><ChevronLeft /></Button>
                 <Button size="icon" variant="outline" disabled={page === pages} onClick={() => setPage((p) => p + 1)}><ChevronRight /></Button>
               </div>
@@ -659,7 +660,7 @@ function CreateSellerDialog({ open, onClose, onCreate }: { open: boolean; onClos
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-lg">
-        <DialogHeader><DialogTitle>Add Seller</DialogTitle><DialogDescription>Onboard a new marketplace seller.</DialogDescription></DialogHeader>
+        <DialogHeader><DialogTitle>{adminTr("Add Seller")}</DialogTitle><DialogDescription>{adminTr("Onboard a new marketplace seller.")}</DialogDescription></DialogHeader>
         <div className="grid gap-4">
           <Field label="Owner Name"><Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} /></Field>
           <Field label="Shop Name"><Input value={form.shopName} onChange={(e) => setForm((f) => ({ ...f, shopName: e.target.value }))} /></Field>

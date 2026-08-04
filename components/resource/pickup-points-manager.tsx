@@ -1,5 +1,7 @@
 "use client";
 
+import { adminTr } from "@/lib/i18n/admin-tr";
+
 import * as React from "react";
 import {
   RouteIcon,
@@ -143,8 +145,7 @@ const CHART_COLORS = ["var(--color-chart-1)", "var(--color-chart-2)", "var(--col
 // Component
 // ---------------------------------------------------------------------------
 
-export function PickupPointsManager() {
-  const [points, setPoints] = React.useState<Point[]>([]);
+export function PickupPointsManager(){const [points, setPoints] = React.useState<Point[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [query, setQuery] = React.useState("");
@@ -300,7 +301,7 @@ export function PickupPointsManager() {
     <div className="mx-auto flex max-w-[1900px] flex-col gap-5 pb-12">
       <header className="sticky top-0 z-20 flex flex-col gap-3 bg-background/95 py-2 backdrop-blur lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold sm:text-3xl">Pickup Points</h1>
+          <h1 className="font-display text-2xl font-bold sm:text-3xl">{adminTr("Pickup Points")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">Manage click-and-collect locations, capacity, operating hours, and order handoff.</p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -325,7 +326,7 @@ export function PickupPointsManager() {
 
       <Tabs value={mainTab} onValueChange={setMainTab}>
         <TabsList>
-          <TabsTrigger value="points">Pickup Points</TabsTrigger>
+          <TabsTrigger value="points">{adminTr("Pickup Points")}</TabsTrigger>
           <TabsTrigger value="analytics">Analytics & Reports</TabsTrigger>
           <TabsTrigger value="audit">Audit Log</TabsTrigger>
           <TabsTrigger value="security">Permissions</TabsTrigger>
@@ -340,7 +341,7 @@ export function PickupPointsManager() {
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="xl:w-36"><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value="all">All statuses</SelectItem><SelectItem value="active">Active</SelectItem><SelectItem value="inactive">Inactive</SelectItem></SelectContent>
+                <SelectContent><SelectItem value="all">{adminTr("All statuses")}</SelectItem><SelectItem value="active">Active</SelectItem><SelectItem value="inactive">Inactive</SelectItem></SelectContent>
               </Select>
               <Select value={countryFilter} onValueChange={setCountryFilter}>
                 <SelectTrigger className="xl:w-44"><SelectValue /></SelectTrigger>
@@ -421,7 +422,7 @@ export function PickupPointsManager() {
             <div className="flex items-center justify-between border-t p-4">
               <span className="text-xs text-muted-foreground">{rows.length} pickup points · Customize and reorder columns</span>
               <div className="flex items-center gap-2">
-                <span className="text-xs">Page {page} of {pages}</span>
+                <span className="text-xs">{adminTr("Page {page} of {pages}", { page: page, pages: pages })}</span>
                 <Button size="icon" variant="outline" disabled={page === 1} onClick={() => setPage((p) => p - 1)}><ChevronLeft /></Button>
                 <Button size="icon" variant="outline" disabled={page === pages} onClick={() => setPage((p) => p + 1)}><ChevronRight /></Button>
               </div>
@@ -547,7 +548,7 @@ function CreatePointDialog({ open, onClose, onCreate }: { open: boolean; onClose
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-lg">
-        <DialogHeader><DialogTitle>Add Pickup Point</DialogTitle><DialogDescription>Create a new click-and-collect location.</DialogDescription></DialogHeader>
+        <DialogHeader><DialogTitle>{adminTr("Add Pickup Point")}</DialogTitle><DialogDescription>{adminTr("Create a new click-and-collect location.")}</DialogDescription></DialogHeader>
         <div className="grid gap-4">
           <Field label="Location Name"><Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} /></Field>
           <Field label="Address"><Input value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} /></Field>

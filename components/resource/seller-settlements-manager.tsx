@@ -1,5 +1,7 @@
 "use client";
 
+import { adminTr } from "@/lib/i18n/admin-tr";
+
 import * as React from "react";
 import {
   Banknote,
@@ -142,8 +144,7 @@ const CHART_COLORS = ["var(--color-chart-1)", "var(--color-chart-2)", "var(--col
 // Component
 // ---------------------------------------------------------------------------
 
-export function SellerSettlementsManager() {
-  const [settlements, setSettlements] = React.useState<Settlement[]>([]);
+export function SellerSettlementsManager(){const [settlements, setSettlements] = React.useState<Settlement[]>([]);
   const [sellers, setSellers] = React.useState<Seller[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -329,13 +330,13 @@ export function SellerSettlementsManager() {
     <div className="mx-auto flex max-w-[1900px] flex-col gap-5 pb-12">
       <header className="sticky top-0 z-20 flex flex-col gap-3 bg-background/95 py-2 backdrop-blur lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold sm:text-3xl">Seller Settlements</h1>
+          <h1 className="font-display text-2xl font-bold sm:text-3xl">{adminTr("Seller Settlements")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">Calculate, reconcile, approve, and manage seller settlement cycles before payouts.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button onClick={() => setGenerateOpen(true)}><Calculator /> Generate Settlements</Button>
           <Button variant="outline" onClick={runSettlementCycle}><RotateCcw /> Run Settlement Cycle</Button>
-          <Button variant="outline" onClick={() => toast.info("Settlement data import queued")}>Import Settlement Data</Button>
+          <Button variant="outline" onClick={() => toast.info("Settlement data import queued")}>{adminTr("Import Settlement Data")}</Button>
           <Button variant="outline" onClick={exportCsv}><Download /> Export</Button>
           <Button variant="outline" onClick={() => void load()}><RefreshCw /> Refresh</Button>
         </div>
@@ -369,7 +370,7 @@ export function SellerSettlementsManager() {
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="xl:w-44"><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value="all">All statuses</SelectItem>{settlementStages.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                <SelectContent><SelectItem value="all">{adminTr("All statuses")}</SelectItem>{settlementStages.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
               <Button variant="outline" onClick={() => toast.info("Currency, commission plan, and settlement cycle filters can be saved as a view")}><Filter /> Advanced</Button>
               <Button variant={autoRefresh ? "default" : "outline"} onClick={() => setAutoRefresh((v) => !v)}>Auto Refresh</Button>
@@ -392,9 +393,9 @@ export function SellerSettlementsManager() {
               <EmptyState
                 icon={Banknote}
                 title="No seller settlements have been generated yet."
-                description="Generate settlements or run a settlement cycle to calculate seller payables."
+                description={adminTr("Generate settlements or run a settlement cycle to calculate seller payables.")}
                 className="py-20"
-                action={<div className="flex gap-2"><Button onClick={() => setGenerateOpen(true)}><Plus /> Generate Settlements</Button><Button variant="outline" onClick={runSettlementCycle}>Run Settlement Cycle</Button></div>}
+                action={<div className="flex gap-2"><Button onClick={() => setGenerateOpen(true)}><Plus /> Generate Settlements</Button><Button variant="outline" onClick={runSettlementCycle}>{adminTr("Run Settlement Cycle")}</Button></div>}
               />
             ) : (
               <div className="overflow-x-auto">
@@ -428,7 +429,7 @@ export function SellerSettlementsManager() {
                               <DropdownMenuItem onClick={() => void transition(s, "Approved")}><CheckCircle2 /> Approve</DropdownMenuItem>
                               <DropdownMenuItem onClick={() => void transition(s, "Cancelled")}>Reject</DropdownMenuItem>
                               <DropdownMenuItem onClick={() => toast.success("Settlement statement generated")}><FileText /> Generate Statement</DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => toast.success("Invoice generated")}>Generate Invoice</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => toast.success("Invoice generated")}>{adminTr("Generate Invoice")}</DropdownMenuItem>
                               <DropdownMenuItem onClick={() => toast.success("Settlement PDF downloaded")}><Download /> Download PDF</DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem onClick={() => setMainTab("audit")}><History /> View Audit Log</DropdownMenuItem>
@@ -444,7 +445,7 @@ export function SellerSettlementsManager() {
             <div className="flex items-center justify-between border-t p-4">
               <span className="text-xs text-muted-foreground">{rows.length} settlements · Customize and reorder columns</span>
               <div className="flex items-center gap-2">
-                <span className="text-xs">Page {page} of {pages}</span>
+                <span className="text-xs">{adminTr("Page {page} of {pages}", { page: page, pages: pages })}</span>
                 <Button size="icon" variant="outline" disabled={page === 1} onClick={() => setPage((p) => p - 1)}><ChevronLeft /></Button>
                 <Button size="icon" variant="outline" disabled={page === pages} onClick={() => setPage((p) => p + 1)}><ChevronRight /></Button>
               </div>
@@ -601,7 +602,7 @@ function GenerateSettlementDialog({
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-2xl">
-        <DialogHeader><DialogTitle>Generate Settlement</DialogTitle><DialogDescription>Calculate a settlement for a seller's sales period.</DialogDescription></DialogHeader>
+        <DialogHeader><DialogTitle>{adminTr("Generate Settlement")}</DialogTitle><DialogDescription>{adminTr("Calculate a settlement for a seller's sales period.")}</DialogDescription></DialogHeader>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
             <Label>Seller</Label>

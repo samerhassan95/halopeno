@@ -1,5 +1,7 @@
 "use client";
 
+import { adminTr } from "@/lib/i18n/admin-tr";
+
 import * as React from "react";
 import Link from "next/link";
 import {
@@ -140,8 +142,7 @@ const CHART_COLORS = ["var(--color-chart-1)", "var(--color-chart-2)", "var(--col
 // Component
 // ---------------------------------------------------------------------------
 
-export function InvoicesManager() {
-  const [invoices, setInvoices] = React.useState<Invoice[]>([]);
+export function InvoicesManager(){const [invoices, setInvoices] = React.useState<Invoice[]>([]);
   const [orders, setOrders] = React.useState<Order[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -335,12 +336,12 @@ export function InvoicesManager() {
     <div className="mx-auto flex max-w-[1900px] flex-col gap-5 pb-12">
       <header className="sticky top-0 z-20 flex flex-col gap-3 bg-background/95 py-2 backdrop-blur lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold sm:text-3xl">Invoices</h1>
+          <h1 className="font-display text-2xl font-bold sm:text-3xl">{adminTr("Invoices")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">Manage customer invoices, billing, payments, taxes, and financial records.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button onClick={() => setCreateOpen(true)}><Plus /> Create Invoice</Button>
-          <Button variant="outline" onClick={() => toast.info("Invoice import queued for validation")}>Import Invoices</Button>
+          <Button variant="outline" onClick={() => toast.info("Invoice import queued for validation")}>{adminTr("Import Invoices")}</Button>
           <Button variant="outline" onClick={exportCsv}><Download /> Export</Button>
           <Button variant="outline" onClick={() => void load()}><RefreshCw /> Refresh</Button>
         </div>
@@ -362,7 +363,7 @@ export function InvoicesManager() {
 
       <Tabs value={mainTab} onValueChange={setMainTab}>
         <TabsList>
-          <TabsTrigger value="invoices">Invoices</TabsTrigger>
+          <TabsTrigger value="invoices">{adminTr("Invoices")}</TabsTrigger>
           <TabsTrigger value="analytics">Analytics & Reports</TabsTrigger>
           <TabsTrigger value="audit">Audit Log</TabsTrigger>
           <TabsTrigger value="security">Permissions</TabsTrigger>
@@ -377,7 +378,7 @@ export function InvoicesManager() {
               </div>
               <Select value={status} onValueChange={setStatus}>
                 <SelectTrigger className="xl:w-40"><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value="all">All statuses</SelectItem>{invoiceStatuses.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                <SelectContent><SelectItem value="all">{adminTr("All statuses")}</SelectItem>{invoiceStatuses.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
               <Select value={paymentStatus} onValueChange={setPaymentStatus}>
                 <SelectTrigger className="xl:w-44"><SelectValue /></SelectTrigger>
@@ -410,12 +411,12 @@ export function InvoicesManager() {
               <EmptyState
                 icon={FileText}
                 title="No invoices have been created yet."
-                description="Create an invoice or import existing invoice records."
+                description={adminTr("Create an invoice or import existing invoice records.")}
                 className="py-20"
                 action={
                   <div className="flex gap-2">
                     <Button onClick={() => setCreateOpen(true)}><Plus /> Create Invoice</Button>
-                    <Button variant="outline" onClick={() => toast.info("Invoice import queued")}>Import Invoices</Button>
+                    <Button variant="outline" onClick={() => toast.info("Invoice import queued")}>{adminTr("Import Invoices")}</Button>
                   </div>
                 }
               />
@@ -481,7 +482,7 @@ export function InvoicesManager() {
             <div className="flex items-center justify-between border-t p-4">
               <span className="text-xs text-muted-foreground">{rows.length} invoices · Customize and reorder columns</span>
               <div className="flex items-center gap-2">
-                <span className="text-xs">Page {page} of {pages}</span>
+                <span className="text-xs">{adminTr("Page {page} of {pages}", { page: page, pages: pages })}</span>
                 <Button size="icon" variant="outline" disabled={page === 1} onClick={() => setPage((p) => p - 1)}><ChevronLeft /></Button>
                 <Button size="icon" variant="outline" disabled={page === pages} onClick={() => setPage((p) => p + 1)}><ChevronRight /></Button>
               </div>
@@ -655,7 +656,7 @@ function CreateInvoiceDialog({
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Create Invoice</DialogTitle>
+          <DialogTitle>{adminTr("Create Invoice")}</DialogTitle>
           <DialogDescription>Issue a new invoice for an existing order.</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 sm:grid-cols-2">

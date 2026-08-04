@@ -1,5 +1,7 @@
 "use client";
 
+import { adminTr } from "@/lib/i18n/admin-tr";
+
 import * as React from "react";
 import Link from "next/link";
 import {
@@ -175,8 +177,7 @@ const CHART_COLORS = ["var(--color-chart-1)", "var(--color-chart-2)", "var(--col
 // Component
 // ---------------------------------------------------------------------------
 
-export function SellerVerificationManager() {
-  const [sellers, setSellers] = React.useState<Seller[]>([]);
+export function SellerVerificationManager(){const [sellers, setSellers] = React.useState<Seller[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [query, setQuery] = React.useState("");
@@ -310,13 +311,13 @@ export function SellerVerificationManager() {
     <div className="mx-auto flex max-w-[1900px] flex-col gap-5 pb-12">
       <header className="sticky top-0 z-20 flex flex-col gap-3 bg-background/95 py-2 backdrop-blur lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold sm:text-3xl">Seller Verification</h1>
+          <h1 className="font-display text-2xl font-bold sm:text-3xl">{adminTr("Seller Verification")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">Review seller applications, verify identity and business documents, manage compliance, and approve marketplace access.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button onClick={() => setMainTab("queue")}><ShieldCheck /> Review Queue</Button>
-          <Button variant="outline" onClick={() => bulk("Approve")}>Bulk Verify</Button>
-          <Button variant="outline" onClick={() => toast.info("Application import queued")}>Import Applications</Button>
+          <Button variant="outline" onClick={() => bulk("Approve")}>{adminTr("Bulk Verify")}</Button>
+          <Button variant="outline" onClick={() => toast.info("Application import queued")}>{adminTr("Import Applications")}</Button>
           <Button variant="outline" onClick={exportCsv}><Download /> Export</Button>
           <Button variant="outline" onClick={() => void load()}><RefreshCw /> Refresh</Button>
         </div>
@@ -379,7 +380,7 @@ export function SellerVerificationManager() {
                 title="All seller verification requests have been processed."
                 description="New applications will appear here as sellers register."
                 className="py-20"
-                action={<div className="flex gap-2"><Button variant="outline" onClick={() => toast.info("Approved sellers list opened")}>View Approved Sellers</Button><Button variant="outline" onClick={() => toast.info("Application import queued")}>Import Applications</Button></div>}
+                action={<div className="flex gap-2"><Button variant="outline" onClick={() => toast.info("Approved sellers list opened")}>{adminTr("View Approved Sellers")}</Button><Button variant="outline" onClick={() => toast.info("Application import queued")}>{adminTr("Import Applications")}</Button></div>}
               />
             ) : (
               <div className="overflow-x-auto">
@@ -440,7 +441,7 @@ export function SellerVerificationManager() {
             <div className="flex items-center justify-between border-t p-4">
               <span className="text-xs text-muted-foreground">{rows.length} applications · Customize and reorder columns</span>
               <div className="flex items-center gap-2">
-                <span className="text-xs">Page {page} of {pages}</span>
+                <span className="text-xs">{adminTr("Page {page} of {pages}", { page: page, pages: pages })}</span>
                 <Button size="icon" variant="outline" disabled={page === 1} onClick={() => setPage((p) => p - 1)}><ChevronLeft /></Button>
                 <Button size="icon" variant="outline" disabled={page === pages} onClick={() => setPage((p) => p + 1)}><ChevronRight /></Button>
               </div>

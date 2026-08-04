@@ -1,5 +1,7 @@
 "use client";
 
+import { adminTr } from "@/lib/i18n/admin-tr";
+
 import * as React from "react";
 import Link from "next/link";
 import {
@@ -177,8 +179,7 @@ const CHART_COLORS = ["var(--color-chart-1)", "var(--color-chart-2)", "var(--col
 // Component
 // ---------------------------------------------------------------------------
 
-export function TransactionsManager() {
-  const [transactions, setTransactions] = React.useState<Transaction[]>([]);
+export function TransactionsManager(){const [transactions, setTransactions] = React.useState<Transaction[]>([]);
   const [orders, setOrders] = React.useState<Order[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -387,12 +388,12 @@ export function TransactionsManager() {
     <div className="mx-auto flex max-w-[1900px] flex-col gap-5 pb-12">
       <header className="sticky top-0 z-20 flex flex-col gap-3 bg-background/95 py-2 backdrop-blur lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold sm:text-3xl">Transactions</h1>
+          <h1 className="font-display text-2xl font-bold sm:text-3xl">{adminTr("Transactions")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">Manage all payment transactions, settlements, refunds, chargebacks, and financial reconciliation across the platform.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button onClick={() => setCreateOpen(true)}><Plus /> Create Manual Transaction</Button>
-          <Button variant="outline" onClick={() => toast.info("Transaction import queued for validation")}>Import Transactions</Button>
+          <Button variant="outline" onClick={() => toast.info("Transaction import queued for validation")}>{adminTr("Import Transactions")}</Button>
           <Button variant="outline" onClick={exportCsv}><Download /> Export</Button>
           <Button variant="outline" onClick={() => void load()}><RefreshCw /> Refresh</Button>
         </div>
@@ -406,14 +407,14 @@ export function TransactionsManager() {
         <StatCard icon={Undo2} tone="accent" title="Refunded" value={formatNumber(refunded)} />
         <StatCard icon={ShieldAlert} tone="destructive" title="Chargebacks" value={formatNumber(chargebacks)} />
         <StatCard icon={BadgeDollarSign} tone="primary" title="Gross Revenue" value={formatCurrency(grossRevenue)} />
-        <StatCard icon={BadgeDollarSign} tone="success" title="Net Revenue" value={formatCurrency(netRevenue)} />
+        <StatCard icon={BadgeDollarSign} tone="success" title={adminTr("Net Revenue")} value={formatCurrency(netRevenue)} />
         <StatCard icon={Percent} tone="warning" title="Processing Fees" value={formatCurrency(processingFees)} />
         <StatCard icon={Receipt} tone="accent" title="Avg. Transaction" value={formatCurrency(avgValue)} />
       </div>
 
       <Tabs value={mainTab} onValueChange={setMainTab}>
         <TabsList>
-          <TabsTrigger value="transactions">Transactions</TabsTrigger>
+          <TabsTrigger value="transactions">{adminTr("Transactions")}</TabsTrigger>
           <TabsTrigger value="analytics">Analytics & Reports</TabsTrigger>
           <TabsTrigger value="audit">Audit Log</TabsTrigger>
           <TabsTrigger value="security">Permissions</TabsTrigger>
@@ -428,11 +429,11 @@ export function TransactionsManager() {
               </div>
               <Select value={status} onValueChange={setStatus}>
                 <SelectTrigger className="xl:w-44"><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value="all">All statuses</SelectItem>{transactionStatuses.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                <SelectContent><SelectItem value="all">{adminTr("All statuses")}</SelectItem>{transactionStatuses.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
               <Select value={type} onValueChange={setType}>
                 <SelectTrigger className="xl:w-44"><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value="all">All types</SelectItem>{transactionTypes.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                <SelectContent><SelectItem value="all">{adminTr("All types")}</SelectItem>{transactionTypes.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
               </Select>
               <Select value={gateway} onValueChange={setGateway}>
                 <SelectTrigger className="xl:w-44"><SelectValue /></SelectTrigger>
@@ -470,7 +471,7 @@ export function TransactionsManager() {
                 action={
                   <div className="flex gap-2">
                     <Button onClick={() => setCreateOpen(true)}><Plus /> Create Manual Transaction</Button>
-                    <Button variant="outline" onClick={() => toast.info("Transaction import queued")}>Import Transactions</Button>
+                    <Button variant="outline" onClick={() => toast.info("Transaction import queued")}>{adminTr("Import Transactions")}</Button>
                   </div>
                 }
               />
@@ -536,7 +537,7 @@ export function TransactionsManager() {
             <div className="flex items-center justify-between border-t p-4">
               <span className="text-xs text-muted-foreground">{rows.length} transactions · Customize and reorder columns</span>
               <div className="flex items-center gap-2">
-                <span className="text-xs">Page {page} of {pages}</span>
+                <span className="text-xs">{adminTr("Page {page} of {pages}", { page: page, pages: pages })}</span>
                 <Button size="icon" variant="outline" disabled={page === 1} onClick={() => setPage((p) => p - 1)}><ChevronLeft /></Button>
                 <Button size="icon" variant="outline" disabled={page === pages} onClick={() => setPage((p) => p + 1)}><ChevronRight /></Button>
               </div>
@@ -722,7 +723,7 @@ function CreateTransactionDialog({
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Create Manual Transaction</DialogTitle>
+          <DialogTitle>{adminTr("Create Manual Transaction")}</DialogTitle>
           <DialogDescription>Record an offline or manually reconciled payment transaction.</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 sm:grid-cols-2">

@@ -1,5 +1,7 @@
 "use client";
 
+import { adminTr } from "@/lib/i18n/admin-tr";
+
 import * as React from "react";
 import {
   UsersRound,
@@ -150,8 +152,7 @@ const CHART_COLORS = ["var(--color-chart-1)", "var(--color-chart-2)", "var(--col
 // Component
 // ---------------------------------------------------------------------------
 
-export function CustomerGroupsManager() {
-  const [groups, setGroups] = React.useState<Group[]>([]);
+export function CustomerGroupsManager(){const [groups, setGroups] = React.useState<Group[]>([]);
   const [customers, setCustomers] = React.useState<Customer[]>([]);
   const [orders, setOrders] = React.useState<Order[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -328,7 +329,7 @@ export function CustomerGroupsManager() {
     <div className="mx-auto flex max-w-[1900px] flex-col gap-5 pb-12">
       <header className="sticky top-0 z-20 flex flex-col gap-3 bg-background/95 py-2 backdrop-blur lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold sm:text-3xl">Customer Groups</h1>
+          <h1 className="font-display text-2xl font-bold sm:text-3xl">{adminTr("Customer Groups")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">Manage customer segmentation, pricing tiers, discounts, permissions, and personalized shopping experiences.</p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -353,7 +354,7 @@ export function CustomerGroupsManager() {
 
       <Tabs value={mainTab} onValueChange={setMainTab}>
         <TabsList>
-          <TabsTrigger value="groups">Customer Groups</TabsTrigger>
+          <TabsTrigger value="groups">{adminTr("Customer Groups")}</TabsTrigger>
           <TabsTrigger value="analytics">Analytics & Reports</TabsTrigger>
           <TabsTrigger value="audit">Audit Log</TabsTrigger>
           <TabsTrigger value="security">Permissions</TabsTrigger>
@@ -368,7 +369,7 @@ export function CustomerGroupsManager() {
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="xl:w-36"><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value="all">All statuses</SelectItem><SelectItem value="Active">Active</SelectItem><SelectItem value="Inactive">Inactive</SelectItem></SelectContent>
+                <SelectContent><SelectItem value="all">{adminTr("All statuses")}</SelectItem><SelectItem value="Active">Active</SelectItem><SelectItem value="Inactive">Inactive</SelectItem></SelectContent>
               </Select>
               <Select value={levelFilter} onValueChange={setLevelFilter}>
                 <SelectTrigger className="xl:w-44"><SelectValue /></SelectTrigger>
@@ -395,7 +396,7 @@ export function CustomerGroupsManager() {
               <EmptyState
                 icon={UsersRound}
                 title="No customer groups have been created yet."
-                description="Create a customer group or import existing segments."
+                description={adminTr("Create a customer group or import existing segments.")}
                 className="py-20"
                 action={<div className="flex gap-2"><Button onClick={() => setCreateOpen(true)}><Plus /> Add Customer Group</Button><Button variant="outline" onClick={() => importRef.current?.click()}><Upload /> Import Customer Groups</Button></div>}
               />
@@ -430,7 +431,7 @@ export function CustomerGroupsManager() {
                               <DropdownMenuItem onClick={() => setDrawer(g)}>Edit</DropdownMenuItem>
                               <DropdownMenuItem onClick={() => void duplicate(g)}><Copy /> Duplicate</DropdownMenuItem>
                               <DropdownMenuItem onClick={() => toast.info(`Viewing ${stats.customers} customers in ${g.name}`)}>View Customers</DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => setDrawer(g)}>Manage Pricing</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setDrawer(g)}>{adminTr("Manage Pricing")}</DropdownMenuItem>
                               <DropdownMenuItem onClick={() => setDrawer(g)}>Configure Permissions</DropdownMenuItem>
                               <DropdownMenuItem onClick={() => toggleStatus(g)}>{m.status === "Active" ? "Deactivate" : "Activate"}</DropdownMenuItem>
                               <DropdownMenuSeparator />
@@ -447,7 +448,7 @@ export function CustomerGroupsManager() {
             <div className="flex items-center justify-between border-t p-4">
               <span className="text-xs text-muted-foreground">{rows.length} customer groups · Customize and reorder columns</span>
               <div className="flex items-center gap-2">
-                <span className="text-xs">Page {page} of {pages}</span>
+                <span className="text-xs">{adminTr("Page {page} of {pages}", { page: page, pages: pages })}</span>
                 <Button size="icon" variant="outline" disabled={page === 1} onClick={() => setPage((p) => p - 1)}><ChevronLeft /></Button>
                 <Button size="icon" variant="outline" disabled={page === pages} onClick={() => setPage((p) => p + 1)}><ChevronRight /></Button>
               </div>
@@ -595,7 +596,7 @@ function CreateGroupDialog({ open, onClose, onCreate }: { open: boolean; onClose
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-lg">
-        <DialogHeader><DialogTitle>Add Customer Group</DialogTitle><DialogDescription>Create a new customer segment.</DialogDescription></DialogHeader>
+        <DialogHeader><DialogTitle>{adminTr("Add Customer Group")}</DialogTitle><DialogDescription>{adminTr("Create a new customer segment.")}</DialogDescription></DialogHeader>
         <div className="grid gap-4">
           <Field label="Group Name"><Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} /></Field>
           <Field label="Description"><Textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} /></Field>

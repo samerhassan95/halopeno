@@ -1,5 +1,7 @@
 "use client";
 
+import { adminTr } from "@/lib/i18n/admin-tr";
+
 import * as React from "react";
 import {
   MapPin,
@@ -161,8 +163,7 @@ const CHART_COLORS = ["var(--color-chart-1)", "var(--color-chart-2)", "var(--col
 // Component
 // ---------------------------------------------------------------------------
 
-export function ShippingZonesManager() {
-  const [zones, setZones] = React.useState<Zone[]>([]);
+export function ShippingZonesManager(){const [zones, setZones] = React.useState<Zone[]>([]);
   const [rates, setRates] = React.useState<Rate[]>([]);
   const [orders, setOrders] = React.useState<Order[]>([]);
   const [warehouses, setWarehouses] = React.useState<Warehouse[]>([]);
@@ -339,7 +340,7 @@ export function ShippingZonesManager() {
     <div className="mx-auto flex max-w-[1900px] flex-col gap-5 pb-12">
       <header className="sticky top-0 z-20 flex flex-col gap-3 bg-background/95 py-2 backdrop-blur lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold sm:text-3xl">Shipping Zones</h1>
+          <h1 className="font-display text-2xl font-bold sm:text-3xl">{adminTr("Shipping Zones")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">Manage geographic delivery zones, shipping coverage, couriers, pricing rules, and warehouse routing.</p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -364,7 +365,7 @@ export function ShippingZonesManager() {
 
       <Tabs value={mainTab} onValueChange={setMainTab}>
         <TabsList>
-          <TabsTrigger value="zones">Shipping Zones</TabsTrigger>
+          <TabsTrigger value="zones">{adminTr("Shipping Zones")}</TabsTrigger>
           <TabsTrigger value="analytics">Analytics & Reports</TabsTrigger>
           <TabsTrigger value="audit">Audit Log</TabsTrigger>
           <TabsTrigger value="security">Permissions</TabsTrigger>
@@ -379,7 +380,7 @@ export function ShippingZonesManager() {
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="xl:w-36"><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value="all">All statuses</SelectItem><SelectItem value="Active">Active</SelectItem><SelectItem value="Inactive">Inactive</SelectItem></SelectContent>
+                <SelectContent><SelectItem value="all">{adminTr("All statuses")}</SelectItem><SelectItem value="Active">Active</SelectItem><SelectItem value="Inactive">Inactive</SelectItem></SelectContent>
               </Select>
               <Select value={countryFilter} onValueChange={setCountryFilter}>
                 <SelectTrigger className="xl:w-44"><SelectValue /></SelectTrigger>
@@ -406,7 +407,7 @@ export function ShippingZonesManager() {
               <EmptyState
                 icon={MapPin}
                 title="No shipping zones have been created yet."
-                description="Create a shipping zone or import existing coverage areas."
+                description={adminTr("Create a shipping zone or import existing coverage areas.")}
                 className="py-20"
                 action={<div className="flex gap-2"><Button onClick={() => setCreateOpen(true)}><Plus /> Add Shipping Zone</Button><Button variant="outline" onClick={() => importRef.current?.click()}><Upload /> Import Shipping Zones</Button></div>}
               />
@@ -446,7 +447,7 @@ export function ShippingZonesManager() {
                               <DropdownMenuItem onClick={() => setDrawer(z)}>Edit</DropdownMenuItem>
                               <DropdownMenuItem onClick={() => void duplicate(z)}><Copy /> Duplicate</DropdownMenuItem>
                               <DropdownMenuItem onClick={() => setDrawer(z)}>Assign Shipping Methods</DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => setDrawer(z)}>Assign Couriers</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setDrawer(z)}>{adminTr("Assign Couriers")}</DropdownMenuItem>
                               <DropdownMenuItem onClick={() => setDrawer(z)}><WarehouseIcon /> Manage Warehouses</DropdownMenuItem>
                               <DropdownMenuItem onClick={() => setDrawer(z)}><MapIcon /> Open Map</DropdownMenuItem>
                               <DropdownMenuItem onClick={() => toggleStatus(z)}>{m.status === "Active" ? "Disable" : "Enable"}</DropdownMenuItem>
@@ -464,7 +465,7 @@ export function ShippingZonesManager() {
             <div className="flex items-center justify-between border-t p-4">
               <span className="text-xs text-muted-foreground">{rows.length} shipping zones · Customize and reorder columns</span>
               <div className="flex items-center gap-2">
-                <span className="text-xs">Page {page} of {pages}</span>
+                <span className="text-xs">{adminTr("Page {page} of {pages}", { page: page, pages: pages })}</span>
                 <Button size="icon" variant="outline" disabled={page === 1} onClick={() => setPage((p) => p - 1)}><ChevronLeft /></Button>
                 <Button size="icon" variant="outline" disabled={page === pages} onClick={() => setPage((p) => p + 1)}><ChevronRight /></Button>
               </div>
@@ -528,7 +529,7 @@ function ZoneDrawer({
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="coverage">Coverage</TabsTrigger>
             <TabsTrigger value="shipping">Shipping</TabsTrigger>
-            <TabsTrigger value="warehouses">Warehouses</TabsTrigger>
+            <TabsTrigger value="warehouses">{adminTr("Warehouses")}</TabsTrigger>
             <TabsTrigger value="rates">Rates</TabsTrigger>
             <TabsTrigger value="internal">Internal</TabsTrigger>
           </TabsList>
@@ -645,7 +646,7 @@ function CreateZoneDialog({ open, onClose, onCreate }: { open: boolean; onClose:
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-lg">
-        <DialogHeader><DialogTitle>Add Shipping Zone</DialogTitle><DialogDescription>Create a geographic delivery zone.</DialogDescription></DialogHeader>
+        <DialogHeader><DialogTitle>{adminTr("Add Shipping Zone")}</DialogTitle><DialogDescription>{adminTr("Create a geographic delivery zone.")}</DialogDescription></DialogHeader>
         <div className="grid gap-4">
           <Field label="Zone Name"><Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} /></Field>
           <Field label="Countries (comma-separated)"><Input value={form.countries} onChange={(e) => setForm((f) => ({ ...f, countries: e.target.value }))} placeholder="Saudi Arabia, UAE, Kuwait" /></Field>
