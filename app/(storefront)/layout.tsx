@@ -24,11 +24,11 @@ import {
 import type { StorefrontHeaderConfig } from "@/components/storefront/header";
 import type { StorefrontFooterConfig } from "@/components/storefront/footer";
 
-export const metadata: Metadata = {
+const DEFAULT_METADATA = {
   title: "Halopeno | Small Jar. Big Kick.",
   description:
     "Small-batch pickled jalapeño flavors, crafted for real heat and real flavor. Shop Zesty Crunch, Mustard Blaze, Ruby Heat and more from Halopeno.",
-};
+} as const;
 
 async function getGlobalStyleOverrides(): Promise<Partial<GlobalStylesConfig> | null> {
   try {
@@ -59,8 +59,8 @@ async function getSiteMeta(): Promise<{ title?: string; description?: string } |
 export async function generateMetadata(): Promise<Metadata> {
   const site = await getSiteMeta();
   return {
-    title: site?.title || metadata.title,
-    description: site?.description || metadata.description,
+    title: site?.title || DEFAULT_METADATA.title,
+    description: site?.description || DEFAULT_METADATA.description,
   };
 }
 
