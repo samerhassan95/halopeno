@@ -24,6 +24,7 @@
     "generate:modules": "tsx scripts/generate-modules.ts",
     "prisma:seed": "tsx prisma/seed.ts",
     "prisma:seed:storefront": "tsx prisma/seed-halopeno.ts",
+    "prisma:seed:production": "tsx prisma/seed-production.ts",
     "prisma:seed:campaigns": "tsx prisma/seed-campaigns.ts"
   },
   "prisma": {

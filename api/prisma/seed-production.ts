@@ -1,17 +1,25 @@
-import {
-  PrismaClient,
-  ProductStatus,
-  ProductType,
-  OrderStatus,
-  OrderChannel,
-  OrderSource,
-  PaymentStatus,
-  TicketStatus,
-  TicketPriority,
-} from '@prisma/client';
+/**
+ * Idempotent production seed for Halopeno.
+ * - Removes unrelated marketplace / demo catalog data
+ * - Upserts the real Halopeno flavors + gift set
+ * - Ensures admin, brand, warehouse, and storefront coupons exist
+ *
+ * Safe to run on every deploy.
+ */
+import { PrismaClient, ProductStatus, ProductType } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
+
+const HALOPENO_SLUGS = [
+  'zesty-crunch',
+  'mustard-blaze',
+  'citrus-kick',
+  'vine-fire',
+  'ruby-heat',
+  'tahini-twist',
+  'the-halopeno-set',
+] as const;
 
 const catalog = [
   {
@@ -98,15 +106,18 @@ const catalog = [
     description: 'Six bold flavours in small jars, perfect for tasting, sharing or gifting.',
     image: '/images/products/halopeno-set.jpg',
   },
+] as const;
+
+const HALOPENO_COUPONS = [
+  { code: 'TRYALL20', discountType: 'PERCENTAGE' as const, discountValue: 20 },
+  { code: 'FIRSTKICK', discountType: 'FIXED' as const, discountValue: 10, minOrderValue: 70 },
+  { code: 'JAR4FREE', discountType: 'PERCENTAGE' as const, discountValue: 25 },
+  { code: 'FREESHIP100', discountType: 'FIXED' as const, discountValue: 15, minOrderValue: 100 },
+  { code: 'GIFTSET15', discountType: 'PERCENTAGE' as const, discountValue: 15 },
+  { code: 'MONTHLYKICK', discountType: 'PERCENTAGE' as const, discountValue: 10 },
 ];
 
-function pick<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
-
-async function main() {
-  console.log('Seeding Halopeno...');
-
+async function ensureBaseSetup() {
   await prisma.language.createMany({
     data: [
       { code: 'en', name: 'English', direction: 'ltr', isDefault: true, isActive: true },
@@ -124,24 +135,51 @@ async function main() {
     skipDuplicates: true,
   });
 
-  const company = await prisma.company.create({
-    data: {
-      name: 'Halopeno',
-      legalName: 'Halopeno Foods',
-      email: 'hello@halopeno.com',
-      country: 'SA',
-    },
+  let company = await prisma.company.findFirst({
+    where: { OR: [{ name: 'Halopeno' }, { email: 'hello@halopeno.com' }] },
   });
+  if (!company) {
+    const vantage = await prisma.company.findFirst({
+      where: { OR: [{ name: { contains: 'Vantage' } }, { email: { contains: 'vantage' } }] },
+    });
+    if (vantage) {
+      company = await prisma.company.update({
+        where: { id: vantage.id },
+        data: { name: 'Halopeno', legalName: 'Halopeno Foods', email: 'hello@halopeno.com', country: 'SA' },
+      });
+    } else {
+      company = await prisma.company.create({
+        data: { name: 'Halopeno', legalName: 'Halopeno Foods', email: 'hello@halopeno.com', country: 'SA' },
+      });
+    }
+  }
 
-  const store = await prisma.store.create({
-    data: {
-      companyId: company.id,
-      name: 'Halopeno Store',
-      domain: 'halopeno.com',
-      currency: 'SAR',
-      language: 'en',
-    },
-  });
+  let store = await prisma.store.findFirst({ where: { companyId: company.id } });
+  if (!store) {
+    store = await prisma.store.findFirst();
+  }
+  if (store) {
+    store = await prisma.store.update({
+      where: { id: store.id },
+      data: {
+        companyId: company.id,
+        name: 'Halopeno Store',
+        domain: 'halopeno.com',
+        currency: 'SAR',
+        language: 'en',
+      },
+    });
+  } else {
+    store = await prisma.store.create({
+      data: {
+        companyId: company.id,
+        name: 'Halopeno Store',
+        domain: 'halopeno.com',
+        currency: 'SAR',
+        language: 'en',
+      },
+    });
+  }
 
   const modules = ['products', 'orders', 'customers', 'sellers', 'marketing', 'finance', 'settings'];
   const actions = ['view', 'create', 'edit', 'delete', 'approve', 'export'];
@@ -175,39 +213,95 @@ async function main() {
   });
 
   const passwordHash = await bcrypt.hash('Password123!', 10);
-  const adminEmail = 'admin@halopeno.com';
-  const existingAdmin = await prisma.user.findUnique({ where: { email: adminEmail } });
-  if (!existingAdmin) {
-    await prisma.user.create({
-      data: {
-        name: 'Halopeno Admin',
-        email: adminEmail,
-        passwordHash,
-        roleId: adminRole.id,
-        jobTitle: 'Store Administrator',
-        status: 'ACTIVE',
-      },
-    });
+  for (const email of ['admin@halopeno.com', 'admin@vantage.dev']) {
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (!existing) {
+      await prisma.user.create({
+        data: {
+          name: 'Halopeno Admin',
+          email,
+          passwordHash,
+          roleId: adminRole.id,
+          jobTitle: 'Store Administrator',
+          status: 'ACTIVE',
+        },
+      });
+    } else {
+      await prisma.user.update({
+        where: { id: existing.id },
+        data: { name: 'Halopeno Admin', roleId: adminRole.id, status: 'ACTIVE' },
+      });
+    }
   }
 
-  // Keep legacy login working if the UI still shows the old email
-  const legacyAdmin = await prisma.user.findUnique({ where: { email: 'admin@vantage.dev' } });
-  if (!legacyAdmin) {
-    await prisma.user.create({
-      data: {
-        name: 'Halopeno Admin',
-        email: 'admin@vantage.dev',
-        passwordHash,
-        roleId: adminRole.id,
-        jobTitle: 'Store Administrator',
-        status: 'ACTIVE',
-      },
+  return { store };
+}
+
+async function removeUnrelatedCatalog() {
+  const junkProducts = await prisma.product.findMany({
+    where: { slug: { notIn: [...HALOPENO_SLUGS] } },
+    select: { id: true, slug: true },
+  });
+  const junkIds = junkProducts.map((p) => p.id);
+
+  if (junkIds.length > 0) {
+    console.log(`Removing ${junkIds.length} unrelated products...`);
+
+    // OrderItem has no onDelete cascade — clear references first
+    const junkOrderItems = await prisma.orderItem.findMany({
+      where: { productId: { in: junkIds } },
+      select: { orderId: true },
     });
+    const affectedOrderIds = [...new Set(junkOrderItems.map((i) => i.orderId))];
+
+    await prisma.orderItem.deleteMany({ where: { productId: { in: junkIds } } });
+
+    // Drop marketplace demo orders (VG-*) and any orders left with no items
+    await prisma.order.deleteMany({ where: { orderNumber: { startsWith: 'VG-' } } });
+
+    for (const orderId of affectedOrderIds) {
+      const remaining = await prisma.orderItem.count({ where: { orderId } });
+      if (remaining === 0) {
+        await prisma.refund.deleteMany({ where: { orderId } });
+        await prisma.payment.deleteMany({ where: { orderId } });
+        await prisma.order.delete({ where: { id: orderId } }).catch(() => undefined);
+      }
+    }
+
+    await prisma.review.deleteMany({ where: { productId: { in: junkIds } } }).catch(() => undefined);
+    await prisma.product.deleteMany({ where: { id: { in: junkIds } } });
   }
 
+  await prisma.order.updateMany({ data: { sellerId: null } });
+  await prisma.product.updateMany({ data: { sellerId: null } });
+  await prisma.seller.deleteMany({});
+
+  await prisma.brand.deleteMany({ where: { slug: { not: 'halopeno' } } });
+  await prisma.category.deleteMany({ where: { slug: { notIn: ['flavors', 'sets'] } } });
+
+  // Old marketplace coupons that are not Halopeno offers
+  await prisma.coupon.deleteMany({
+    where: {
+      code: { in: ['WELCOME10', 'FREESHIP', 'FLASH25', 'SAVE20'] },
+    },
+  });
+
+  await prisma.deliveryAgent.deleteMany({});
+  await prisma.notification.deleteMany({
+    where: {
+      OR: [
+        { body: { contains: 'Trail Running' } },
+        { body: { contains: 'Coastal Goods' } },
+        { title: { contains: 'Seller verification' } },
+      ],
+    },
+  });
+}
+
+async function upsertCatalog(storeId: string) {
   const flavors = await prisma.category.upsert({
     where: { slug: 'flavors' },
-    update: { name: 'Pickled Flavors', status: 'active', isFeatured: true, image: '🌶️' },
+    update: { name: 'Pickled Flavors', status: 'active', isFeatured: true, image: '🌶️', displayOrder: 1 },
     create: {
       name: 'Pickled Flavors',
       slug: 'flavors',
@@ -220,7 +314,7 @@ async function main() {
 
   const sets = await prisma.category.upsert({
     where: { slug: 'sets' },
-    update: { name: 'Gift Sets', status: 'active', isFeatured: true, image: '🎁' },
+    update: { name: 'Gift Sets', status: 'active', isFeatured: true, image: '🎁', displayOrder: 2 },
     create: {
       name: 'Gift Sets',
       slug: 'sets',
@@ -238,7 +332,12 @@ async function main() {
 
   const brand = await prisma.brand.upsert({
     where: { slug: 'halopeno' },
-    update: { name: 'Halopeno', status: 'active', isFeatured: true },
+    update: {
+      name: 'Halopeno',
+      status: 'active',
+      isFeatured: true,
+      description: 'Small Jar. Big Kick. Small-batch pickled jalapeño flavors.',
+    },
     create: {
       name: 'Halopeno',
       slug: 'halopeno',
@@ -250,18 +349,27 @@ async function main() {
 
   const warehouse = await prisma.warehouse.upsert({
     where: { code: 'WH-RYD' },
-    update: {},
+    update: { name: 'Riyadh Kitchen Warehouse', city: 'Riyadh', country: 'SA', storeId, isActive: true },
     create: {
       name: 'Riyadh Kitchen Warehouse',
       code: 'WH-RYD',
       city: 'Riyadh',
       country: 'SA',
-      storeId: store.id,
+      storeId,
       isActive: true,
     },
   });
 
-  const products = [];
+  // Remove old US/EU demo warehouses if empty
+  const demoWarehouses = await prisma.warehouse.findMany({
+    where: { code: { in: ['WH-CTRL', 'WH-WEST', 'WH-EU'] } },
+    select: { id: true },
+  });
+  for (const wh of demoWarehouses) {
+    await prisma.stockItem.deleteMany({ where: { warehouseId: wh.id } });
+    await prisma.warehouse.delete({ where: { id: wh.id } }).catch(() => undefined);
+  }
+
   for (const item of catalog) {
     const product = await prisma.product.upsert({
       where: { slug: item.slug },
@@ -270,6 +378,7 @@ async function main() {
         sku: item.sku,
         categoryId: categoryBySlug.get(item.category),
         brandId: brand.id,
+        sellerId: null,
         shortDescription: item.description,
         description: item.description,
         regularPrice: item.price,
@@ -299,7 +408,6 @@ async function main() {
         countryOfOrigin: 'SA',
       },
     });
-    products.push(product);
 
     const image = await prisma.productImage.findFirst({
       where: { productId: product.id, displayOrder: 0 },
@@ -330,148 +438,38 @@ async function main() {
     }
   }
 
-  const customerDefs = [
-    { name: 'Amelia Foster', email: 'amelia.foster@example.com', city: 'Riyadh' },
-    { name: 'Daniel Osei', email: 'daniel.osei@example.com', city: 'Jeddah' },
-    { name: 'Priya Menon', email: 'priya.menon@example.com', city: 'Dammam' },
-    { name: 'Marcus Webb', email: 'marcus.webb@example.com', city: 'Riyadh' },
-    { name: 'Sofia Marchetti', email: 'sofia.marchetti@example.com', city: 'Khobar' },
-    { name: 'Layla Alharbi', email: 'layla.alharbi@example.com', city: 'Riyadh' },
-    { name: 'Omar Nasser', email: 'omar.nasser@example.com', city: 'Jeddah' },
-    { name: 'Hana Saleh', email: 'hana.saleh@example.com', city: 'Madinah' },
-  ];
-
-  const customers = [];
-  for (const c of customerDefs) {
-    const existing = await prisma.customer.findUnique({ where: { email: c.email } });
-    if (existing) {
-      customers.push(existing);
-      continue;
-    }
-    customers.push(
-      await prisma.customer.create({
-        data: {
-          name: c.name,
-          email: c.email,
-          preferredLanguage: 'en',
-          preferredCurrency: 'SAR',
-          loyaltyPoints: Math.floor(Math.random() * 800),
-          storeCredit: 0,
-          addresses: {
-            create: [
-              {
-                label: 'home',
-                line1: `${c.city} District`,
-                city: c.city,
-                country: 'Saudi Arabia',
-                isDefault: true,
-              },
-            ],
-          },
-        },
-      }),
-    );
-  }
-
-  const orderStatuses: OrderStatus[] = [
-    'PENDING',
-    'CONFIRMED',
-    'PROCESSING',
-    'SHIPPED',
-    'DELIVERED',
-    'DELIVERED',
-    'DELIVERED',
-    'CANCELLED',
-  ];
-
-  for (let i = 0; i < 24; i++) {
-    const customer = customers[i % customers.length];
-    const status = orderStatuses[i % orderStatuses.length];
-    const itemCount = 1 + (i % 3);
-    const orderProducts = Array.from({ length: itemCount }, (_, idx) => products[(i + idx) % products.length]);
-    const subtotal = orderProducts.reduce((sum, p) => sum + Number(p.regularPrice), 0);
-    const shippingTotal = subtotal >= 100 ? 0 : 15;
-    const taxTotal = Math.round(subtotal * 0.15);
-    const total = subtotal + shippingTotal + taxTotal;
-
-    await prisma.order.create({
-      data: {
-        orderNumber: `HAL-${(10020 + i).toString()}`,
-        storeId: store.id,
-        customerId: customer.id,
-        channel: 'IN_HOUSE' as OrderChannel,
-        source: 'WEBSITE' as OrderSource,
-        status,
-        subtotal,
-        shippingTotal,
-        taxTotal,
-        total,
-        items: {
-          create: orderProducts.map((p) => ({
-            productId: p.id,
-            name: p.name,
-            sku: p.sku,
-            quantity: 1,
-            unitPrice: p.regularPrice,
-            total: p.regularPrice,
-          })),
-        },
-        payments: {
-          create: [
-            {
-              method: pick(['card', 'apple_pay', 'cash_on_delivery']),
-              amount: total,
-              status: (status === 'CANCELLED' ? 'FAILED' : 'PAID') as PaymentStatus,
-              paidAt: status === 'PENDING' || status === 'CANCELLED' ? null : new Date(),
-            },
-          ],
-        },
+  for (const coupon of HALOPENO_COUPONS) {
+    await prisma.coupon.upsert({
+      where: { code: coupon.code },
+      update: {
+        discountType: coupon.discountType,
+        discountValue: coupon.discountValue,
+        minOrderValue: 'minOrderValue' in coupon ? coupon.minOrderValue : null,
+        isActive: true,
+      },
+      create: {
+        code: coupon.code,
+        discountType: coupon.discountType,
+        discountValue: coupon.discountValue,
+        minOrderValue: 'minOrderValue' in coupon ? coupon.minOrderValue : null,
+        isActive: true,
       },
     });
   }
+}
 
-  await prisma.coupon.createMany({
-    data: [
-      { code: 'TRYALL20', discountType: 'PERCENTAGE', discountValue: 20, usedCount: 48 },
-      { code: 'FIRSTKICK', discountType: 'FIXED', discountValue: 10, minOrderValue: 70, usedCount: 112 },
-      { code: 'JAR4FREE', discountType: 'PERCENTAGE', discountValue: 25, usedCount: 36 },
-      { code: 'FREESHIP100', discountType: 'FIXED', discountValue: 15, minOrderValue: 100, usedCount: 89 },
-      { code: 'GIFTSET15', discountType: 'PERCENTAGE', discountValue: 15, usedCount: 22 },
-      { code: 'MONTHLYKICK', discountType: 'PERCENTAGE', discountValue: 10, usedCount: 57 },
-    ],
-    skipDuplicates: true,
-  });
+async function main() {
+  console.log('Halopeno production seed starting...');
+  const { store } = await ensureBaseSetup();
+  // Upsert catalog first so kept products point at flavors/sets before junk categories are removed
+  await upsertCatalog(store.id);
+  await removeUnrelatedCatalog();
+  // Re-apply after cleanup in case images/stock were touched
+  await upsertCatalog(store.id);
 
-  const ticketSubjects = [
-    'Order not delivered yet',
-    'Jar arrived cracked',
-    'Unable to apply FIRSTKICK',
-    'Question about mustard allergen',
-    'Wholesale inquiry for restaurants',
-    'Wrong flavor in The Halopeno Set',
-  ];
-
-  for (let i = 0; i < ticketSubjects.length; i++) {
-    await prisma.supportTicket.create({
-      data: {
-        subject: ticketSubjects[i],
-        customerId: customers[i % customers.length].id,
-        priority: pick(['LOW', 'MEDIUM', 'HIGH']) as TicketPriority,
-        status: pick(['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED']) as TicketStatus,
-      },
-    });
-  }
-
-  await prisma.notification.createMany({
-    data: [
-      { title: 'New order received', body: 'HAL-10020 — Zesty Crunch + Citrus Kick', channel: 'IN_APP', status: 'UNREAD', recipientType: 'staff' },
-      { title: 'Low stock alert', body: 'Tahini Twist — only 85 jars left', channel: 'IN_APP', status: 'UNREAD', recipientType: 'staff' },
-      { title: 'Wholesale inquiry', body: 'A restaurant asked about bulk Vine Fire jars', channel: 'IN_APP', status: 'UNREAD', recipientType: 'staff' },
-      { title: 'Gift set popular', body: 'The Halopeno Set sold 12 times this week', channel: 'IN_APP', status: 'READ', recipientType: 'staff' },
-    ],
-  });
-
-  console.log(`Seed complete: ${catalog.length} Halopeno products, ${customers.length} customers, 24 orders.`);
+  const productCount = await prisma.product.count();
+  const categoryCount = await prisma.category.count();
+  console.log(`Halopeno production seed complete: ${productCount} products, ${categoryCount} categories.`);
 }
 
 main()

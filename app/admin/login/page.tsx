@@ -14,7 +14,7 @@ import { ApiError } from "@/lib/api/client";
 export default function LoginPage() {
   const { login, user, loading } = useAuth();
   const router = useRouter();
-  const [email, setEmail] = React.useState("admin@vantage.dev");
+  const [email, setEmail] = React.useState("admin@halopeno.com");
   const [password, setPassword] = React.useState("Password123!");
   const [error, setError] = React.useState<string | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
@@ -80,7 +80,7 @@ export default function LoginPage() {
           </Button>
 
           <p className="text-center text-xs text-muted-foreground">
-            Seeded admin: admin@vantage.dev / Password123!
+            Seeded admin: admin@halopeno.com / Password123!
           </p>
         </form>
       </Card>

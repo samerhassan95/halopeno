@@ -53,7 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const demoUser: AuthUser = {
           id: "demo-admin-1",
           name: "Vantage Admin",
-          email: email || "admin@vantage.dev",
+          email: email || "admin@halopeno.com",
           avatar: null,
           jobTitle: "Super Admin",
         };

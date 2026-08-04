@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      seed_database:
+        description: "Reset server catalog to Halopeno products (removes unrelated demo data)"
+        type: boolean
+        default: true
 
 concurrency:
   group: deploy-production
@@ -84,7 +89,7 @@ jobs:
           source: release.tar.gz
           target: /tmp/halopeno-release/
 
-      - name: Extract, install, and restart
+      - name: Extract, migrate, seed, and restart
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -94,6 +99,8 @@ jobs:
           script: |
             set -euo pipefail
             DEPLOY_PATH="${{ secrets.DEPLOY_PATH }}"
+            SEED_DATABASE="${{ github.event_name != 'workflow_dispatch' || inputs.seed_database }}"
+
             mkdir -p "$DEPLOY_PATH"
             tar -xzf /tmp/halopeno-release/release.tar.gz -C "$DEPLOY_PATH"
 
@@ -105,6 +112,13 @@ jobs:
             npm ci --omit=dev
             npx prisma migrate deploy
             npx prisma generate
+
+            if [ "$SEED_DATABASE" = "true" ]; then
+              echo "Seeding Halopeno production catalog..."
+              npx --yes tsx prisma/seed-production.ts
+            else
+              echo "Skipping database seed (seed_database=false)."
+            fi
 
             if ! command -v pm2 >/dev/null 2>&1; then
               npm install -g pm2 --prefix "$HOME/.local"
