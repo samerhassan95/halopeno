@@ -13,6 +13,7 @@ import { OrderService } from './order.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
+import { Public } from '../../../common/decorators/public.decorator';
 
 @ApiTags('Sales')
 @ApiBearerAuth()
@@ -24,6 +25,13 @@ export class OrderController {
   @ApiOperation({ summary: 'List orders with pagination, search and sorting' })
   findAll(@Query() query: PaginationQueryDto) {
     return this.service.findAll(query);
+  }
+
+  @Public()
+  @Get('tracking/:ref')
+  @ApiOperation({ summary: 'Public order tracking by order number or id' })
+  track(@Param('ref') ref: string) {
+    return this.service.findForTracking(ref);
   }
 
   @Get(':id')

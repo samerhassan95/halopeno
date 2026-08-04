@@ -14,7 +14,7 @@ const menuLinks = [
 ];
 
 const serviceLinks = [
-  { label: "Track Your Order", href: "/track/demo" },
+  { label: "Track Your Order", href: "/track" },
   { label: "Contact Us", href: "/contact" },
   { label: "About Us", href: "/about" },
   { label: "Halopeno Rewards", href: "/loyalty" },

@@ -122,12 +122,19 @@ export function OrderTracking({ orderId }: { orderId: string }) {
       <div className="mx-auto max-w-lg px-4 py-20 text-center sm:px-6">
         <AlertCircle className="mx-auto size-12 text-destructive" />
         <h1 className="mt-4 font-display text-2xl font-semibold text-brown">{error ?? "Order not found"}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Check the order number or try again in a moment.</p>
-        <div className="mt-6 flex justify-center gap-3">
+        <p className="mt-2 text-sm text-muted-foreground">
+          Check the order number or try again in a moment.
+        </p>
+        <div className="mt-6 flex flex-wrap justify-center gap-3">
+          <Button asChild>
+            <Link href="/shop">Continue shopping</Link>
+          </Button>
           <Button variant="outline" onClick={refreshOrder}>
             <RefreshCw className="size-4" /> Try again
           </Button>
-          <Button asChild><Link href="/shop">Continue shopping</Link></Button>
+          <Button variant="ghost" asChild>
+            <Link href="/track">Enter another number</Link>
+          </Button>
         </div>
       </div>
     );
